@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
 import { Produit } from '@/types';
 import { useCart } from '@/context/CartContext';
 
@@ -29,11 +30,13 @@ export default function ProductCard({ produit }: { produit: Produit }) {
         {/* Photo du produit */}
         <div className="relative w-full h-48 bg-slate-800 overflow-hidden">
           {produit.image_url ? (
-            <img
+            <Image
               src={produit.image_url}
               alt={produit.nom}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">

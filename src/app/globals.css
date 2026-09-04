@@ -1,28 +1,45 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Mode Clair (Côté Client / Commande / Suivi) */
+    --bg-primary: #FAFAF7;       /* Crème / Beurre Doux */
+    --bg-card: #FFFFFF;          /* Blanc Pur */
+    --text-primary: #1C1917;     /* Chocolat Noir */
+    --text-secondary: #78716C;   /* Moka Doux */
+    --accent: #D97706;           /* Caramel / Miel */
+    --accent-hover: #B45309;     /* Caramel Intense */
+    --border-color: #E7E5E4;     /* Bordure douce */
+    --success: #059669;          /* Vert Sauge / Pistache */
+  }
+
+  .dark {
+    /* Mode Sombre (Côté Admin / Dashboard Cuisine) */
+    --bg-primary: #1C1917;       /* Anthracite Chaud */
+    --bg-card: #262626;          /* Pierre Sombre */
+    --text-primary: #F5F5F4;     /* Crème Clair */
+    --text-secondary: #A8A29E;   /* Moka Clair */
+    --accent: #F59E0B;           /* Miel Brillant */
+    --accent-hover: #D97706;     /* Miel Chaud */
+    --border-color: #44403C;     /* Bordure Sombre */
+    --success: #10B981;          /* Vert Émeraude */
   }
 
   body {
-    background-color: #090d16;
-    color: #f1f5f9;
-    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* Accent dorés adoucis */
-.text-gold {
-  color: #f59e0b;
-}
-
-.bg-gold {
-  background-color: #d97706;
-}
-
-/* Animations de transition */
-html {
-  scroll-behavior: smooth;
-}
+/* Classes utilitaires personnalisées */
+.bg-brand-cream { background-color: var(--bg-primary); }
+.bg-brand-card { background-color: var(--bg-card); }
+.text-brand-chocolate { color: var(--text-primary); }
+.text-brand-moka { color: var(--text-secondary); }
+.bg-brand-accent { background-color: var(--accent); }
+.bg-brand-accent:hover { background-color: var(--accent-hover); }
+.border-brand { border-color: var(--border-color); }

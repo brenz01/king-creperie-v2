@@ -1,6 +1,12 @@
 export type CategorieProduit = 'salee' | 'sucree' | 'boisson';
 export type StatutCommande = 'recue' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 
+export interface ExtraChoisi {
+  id: string;
+  nom: string;
+  prix: number;
+}
+
 export interface Produit {
   id: string;
   nom: string;
@@ -9,6 +15,9 @@ export interface Produit {
   categorie: CategorieProduit;
   image_url?: string;
   disponible: boolean;
+  // Champs transitoires côté panier uniquement (jamais en base sur `produits`)
+  extrasChoisis?: ExtraChoisi[];
+  prixBase?: number;
 }
 
 export interface CommandeItem {
@@ -18,6 +27,7 @@ export interface CommandeItem {
   nom_produit: string;
   quantite: number;
   prix_unitaire: number;
+  extras: ExtraChoisi[]; // obligatoire, tableau vide si aucun extra
 }
 
 export interface Commande {

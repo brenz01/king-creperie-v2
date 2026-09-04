@@ -10,7 +10,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -20,29 +20,29 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-slate-950/90 backdrop-blur-md shadow-xl border-b border-amber-900/20 py-3'
-          : 'bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent py-5'
+          ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-stone-200/80 py-3'
+          : 'bg-white/60 backdrop-blur-sm border-b border-stone-200/40 py-4'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <Crown className="w-7 h-7 text-amber-500 group-hover:rotate-12 transition-transform duration-300" />
-          <span className="font-serif text-xl font-black tracking-wider text-white">
-            KING <span className="text-amber-500">CRÊPERIE</span>
+          <Crown className="w-7 h-7 text-amber-600 group-hover:rotate-12 transition-transform duration-300" />
+          <span className="font-serif text-xl font-black tracking-wider text-stone-900">
+            KING <span className="text-amber-600">CRÊPERIE</span>
           </span>
         </Link>
 
         {/* Navigation Desktop */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-200">
-          <Link href="/#menu" className="hover:text-amber-400 transition-colors">
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-700">
+          <Link href="/#menu" className="hover:text-amber-600 transition-colors">
             Notre Carte
           </Link>
-          <Link href="/suivi" className="hover:text-amber-400 transition-colors">
+          <Link href="/suivi" className="hover:text-amber-600 transition-colors">
             Suivi de Commande
           </Link>
           <Link
             href="/commande"
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-5 py-2.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-900/20"
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-md shadow-amber-600/20"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Commander</span>
@@ -52,7 +52,7 @@ export default function Navbar() {
         {/* Bouton Menu Mobile */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-slate-200 hover:text-amber-400 transition-colors p-2"
+          className="md:hidden text-stone-800 hover:text-amber-600 transition-colors p-2"
           aria-label="Menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
@@ -61,25 +61,25 @@ export default function Navbar() {
 
       {/* Menu Mobile */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-950/95 backdrop-blur-lg border-b border-amber-900/30 px-6 py-6 flex flex-col gap-4 text-center">
+        <div className="md:hidden bg-white/95 backdrop-blur-lg border-b border-stone-200 px-6 py-6 flex flex-col gap-4 text-center shadow-lg">
           <Link
             href="/#menu"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-slate-200 font-medium hover:text-amber-400 py-2 transition-colors"
+            className="text-stone-800 font-medium hover:text-amber-600 py-2 transition-colors border-b border-stone-100"
           >
             Notre Carte
           </Link>
           <Link
             href="/suivi"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-slate-200 font-medium hover:text-amber-400 py-2 transition-colors"
+            className="text-stone-800 font-medium hover:text-amber-600 py-2 transition-colors border-b border-stone-100"
           >
             Suivi de Commande
           </Link>
           <Link
             href="/commande"
             onClick={() => setMobileMenuOpen(false)}
-            className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-5 py-3 rounded-full justify-center flex items-center gap-2 transition-all"
+            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-full justify-center flex items-center gap-2 transition-all shadow-md"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Commander</span>

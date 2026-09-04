@@ -39,18 +39,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart]);
 
   const addToCart = (produit: Produit) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.produit.id === produit.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.produit.id === produit.id
-            ? { ...item, quantite: item.quantite + 1 }
-            : item
-        );
-      }
-      return [...prev, { produit, quantite: 1 }];
-    });
-  };
+  setCart((prev) => {
+    // La clé d'unicité inclut maintenant les extras : deux mêmes
+    // crêpes avec des extras différents sont deux lignes distinctes.
+    const cleExtras = (produit.extrasChoisis || [])
+      .map((e) => e.id)
+      .sort()
+      .join(',');
+
+    const existing = prev.find(
+      (item) =>
+        item.produit.id === produit.id &&
+        (item.produit.extrasChoisis || []).map((e) => e.id).sort().join(',') === cleExtras
+    );
+
+    if (existing) {
+      return prev.map((item) =>
+        item === existing
+          ? { ...item, quantite: item.quantite + 1 }
+          : item
+      );
+    }
+    return [...prev, { produit, quantite: 1 }];
+  });
+};
 
   const removeFromCart = (produitId: string) => {
     setCart((prev) => prev.filter((item) => item.produit.id !== produitId));

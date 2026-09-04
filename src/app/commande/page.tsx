@@ -54,12 +54,13 @@ export default function CommandePage() {
 
       // 2. Insertion des articles associés
       const itemsToInsert = cart.map((item) => ({
-        commande_id: commande.id,
-        produit_id: item.produit.id,
-        nom_produit: item.produit.nom,
-        quantite: item.quantite,
-        prix_unitaire: item.produit.prix,
-      }));
+  commande_id: commande.id,
+  produit_id: item.produit.id,
+  nom_produit: item.produit.nom,
+  quantite: item.quantite,
+  prix_unitaire: item.produit.prix, // reste le prix total affiché (base + extras)
+  extras: item.produit.extrasChoisis || [], // nouveau — snapshot exact pour la policy
+}));
 
       const { error: itemsError } = await supabase
         .from('commande_items')
@@ -67,7 +68,7 @@ export default function CommandePage() {
 
       if (itemsError) throw itemsError;
 
-      // 3. Generation du message WhatsApp
+      // 3. Génération du message WhatsApp
       const itemsListText = cart
         .map((item) => `• ${item.quantite}x ${item.produit.nom} (${(item.produit.prix * item.quantite).toLocaleString('fr-FR')} FCFA)`)
         .join('\n');
@@ -101,12 +102,12 @@ export default function CommandePage() {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen pt-32 pb-16 px-6 max-w-2xl mx-auto text-center flex flex-col items-center justify-center">
-        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl w-full">
-          <h1 className="text-2xl font-bold font-serif text-white mb-2">Votre panier est vide</h1>
-          <p className="text-slate-400 mb-6">Ajoutez quelques crêpes depuis notre carte avant d'effectuer une commande.</p>
+        <div className="bg-white border border-stone-200/80 shadow-sm p-8 rounded-3xl w-full">
+          <h1 className="text-2xl font-bold font-serif text-stone-900 mb-2">Votre panier est vide</h1>
+          <p className="text-stone-500 mb-6">Ajoutez quelques crêpes depuis notre carte avant d'effectuer une commande.</p>
           <Link
             href="/#menu"
-            className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3 rounded-full transition-all"
+            className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-full transition-all shadow-md shadow-amber-600/20"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Retourner au Menu</span>
@@ -118,62 +119,62 @@ export default function CommandePage() {
 
   return (
     <div className="min-h-screen pt-28 pb-16 px-6 max-w-5xl mx-auto">
-      <Link href="/#menu" className="inline-flex items-center gap-2 text-slate-400 hover:text-amber-400 text-sm mb-6 transition-colors">
+      <Link href="/#menu" className="inline-flex items-center gap-2 text-stone-500 hover:text-amber-600 text-sm mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4" />
         <span>Continuer mes achats</span>
       </Link>
 
-      <h1 className="text-3xl md:text-4xl font-black font-serif text-white mb-8">
-        Validation de la <span className="text-amber-400">Commande</span>
+      <h1 className="text-3xl md:text-4xl font-black font-serif text-stone-900 mb-8">
+        Validation de la <span className="text-amber-600">Commande</span>
       </h1>
 
       {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl mb-6 text-sm">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-sm font-medium">
           {errorMsg}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Formulaire Informations Client */}
-        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-slate-900/90 border border-slate-800 p-6 md:p-8 rounded-3xl space-y-5">
-          <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-3">Informations de livraison</h2>
+        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl space-y-5">
+          <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Informations de livraison</h2>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Nom & Prénom</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Nom & Prénom</label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
                 type="text"
                 required
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex: Babacar Diop"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Numéro Téléphone</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Numéro Téléphone</label>
             <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
                 type="tel"
                 required
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
                 placeholder="Ex: 77 000 00 00"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Zone de livraison</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Zone de livraison</label>
             <select
               value={zoneIndex}
               onChange={(e) => setZoneIndex(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-amber-500"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 px-4 text-stone-900 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
             >
               {ZONES_LIVRAISON.map((z, idx) => (
                 <option key={z.id} value={idx}>
@@ -184,30 +185,30 @@ export default function CommandePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Adresse Précise</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Adresse Précise</label>
             <div className="relative">
-              <MapPin className="absolute left-4 top-3 text-slate-500 w-5 h-5" />
+              <MapPin className="absolute left-4 top-3 text-stone-400 w-5 h-5" />
               <textarea
                 required
                 rows={2}
                 value={adresse}
                 onChange={(e) => setAdresse(e.target.value)}
                 placeholder="Rue, Immeuble, Appt, Repère visuel..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Créneau Souhaité</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Créneau Souhaité</label>
             <div className="relative">
-              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
                 type="text"
                 value={creneau}
                 onChange={(e) => setCreneau(e.target.value)}
                 placeholder="Ex: Au plus vite / 20h00"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
               />
             </div>
           </div>
@@ -215,7 +216,7 @@ export default function CommandePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+            className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             <Send className="w-5 h-5" />
             <span>{loading ? 'Traitement...' : 'Envoyer la commande via WhatsApp'}</span>
@@ -223,34 +224,34 @@ export default function CommandePage() {
         </form>
 
         {/* Récapitulatif du Panier */}
-        <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 p-6 md:p-8 rounded-3xl h-fit">
-          <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-3">Récapitulatif</h2>
+        <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl h-fit">
+          <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
 
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2 mb-6">
             {cart.map((item) => (
-              <div key={item.produit.id} className="flex justify-between items-center border-b border-slate-800/60 pb-3">
+              <div key={item.produit.id} className="flex justify-between items-center border-b border-stone-100 pb-3">
                 <div className="flex-1 pr-2">
-                  <p className="font-bold text-slate-200 text-sm">{item.produit.nom}</p>
-                  <p className="text-xs text-amber-400">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
+                  <p className="font-bold text-stone-900 text-sm">{item.produit.nom}</p>
+                  <p className="text-xs text-amber-600 font-medium">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => updateQuantity(item.produit.id, -1)}
-                    className="bg-slate-800 text-white w-7 h-7 rounded-lg flex items-center justify-center font-bold"
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
                   >
                     -
                   </button>
-                  <span className="text-sm font-bold w-4 text-center">{item.quantite}</span>
+                  <span className="text-sm font-bold w-4 text-center text-stone-900">{item.quantite}</span>
                   <button
                     onClick={() => updateQuantity(item.produit.id, 1)}
-                    className="bg-slate-800 text-white w-7 h-7 rounded-lg flex items-center justify-center font-bold"
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
                   >
                     +
                   </button>
                   <button
                     onClick={() => removeFromCart(item.produit.id)}
-                    className="text-red-400 hover:text-red-300 ml-2"
+                    className="text-rose-500 hover:text-rose-600 ml-2 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -259,16 +260,16 @@ export default function CommandePage() {
             ))}
           </div>
 
-          <div className="space-y-2 border-t border-slate-800 pt-4 text-sm">
-            <div className="flex justify-between text-slate-400">
+          <div className="space-y-2 border-t border-stone-100 pt-4 text-sm">
+            <div className="flex justify-between text-stone-500">
               <span>Sous-total</span>
-              <span>{totalAmount.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-medium text-stone-800">{totalAmount.toLocaleString('fr-FR')} FCFA</span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-stone-500">
               <span>Frais de livraison</span>
-              <span>{fraisLivraison.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-medium text-stone-800">{fraisLivraison.toLocaleString('fr-FR')} FCFA</span>
             </div>
-            <div className="flex justify-between text-lg font-black text-amber-400 border-t border-slate-800 pt-3">
+            <div className="flex justify-between text-lg font-black text-amber-600 border-t border-stone-100 pt-3">
               <span>Total Général</span>
               <span>{totalGeneral.toLocaleString('fr-FR')} FCFA</span>
             </div>

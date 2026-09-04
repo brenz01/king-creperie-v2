@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`scroll-smooth ${inter.variable} ${playfair.variable}`}>
-      <body className="bg-[#1C2B45] text-slate-100 font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
+      <body className="bg-brand-cream text-brand-chocolate font-sans antialiased selection:bg-amber-500 selection:text-white min-h-screen">
         <CartProvider>
           <SmoothScrollProvider>
             <Navbar />

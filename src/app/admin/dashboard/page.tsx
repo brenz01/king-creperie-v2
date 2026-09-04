@@ -66,23 +66,23 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-16 px-6 max-w-7xl mx-auto">
-      <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-slate-800 pb-6">
+    <div className="min-h-screen pt-28 pb-16 px-6 max-w-7xl mx-auto text-stone-100">
+      <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-stone-800 pb-6">
         <div>
           <h1 className="text-3xl font-black font-serif text-white">Tableau de bord Staff</h1>
-          <p className="text-slate-400 text-sm">Gestion du flux de commandes en temps réel</p>
+          <p className="text-stone-400 text-sm">Gestion du flux de commandes en temps réel</p>
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={fetchCommandes}
-            className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 hover:text-white"
+            className="p-3 bg-stone-900 border border-stone-800 rounded-xl text-stone-300 hover:text-white hover:border-stone-700 transition-colors"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 font-bold px-4 py-2.5 rounded-xl hover:bg-red-500/20 text-sm"
+            className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold px-4 py-2.5 rounded-xl hover:bg-rose-500/20 text-sm transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Déconnexion</span>
@@ -91,21 +91,21 @@ export default function AdminDashboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-amber-400 text-center py-12">Chargement des commandes...</p>
+        <p className="text-amber-500 text-center py-12 font-medium">Chargement des commandes...</p>
       ) : (
         <div className="space-y-4">
           {commandes.map((cmd) => (
-            <div key={cmd.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div key={cmd.id} className="bg-stone-900 border border-stone-800/80 p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-md">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-amber-400 text-sm">#{cmd.id.slice(0, 8)}</span>
-                  <span className="text-xs text-slate-500">{new Date(cmd.created_at).toLocaleString('fr-FR')}</span>
+                  <span className="font-mono font-bold text-amber-500 text-sm">#{cmd.id.slice(0, 8)}</span>
+                  <span className="text-xs text-stone-500">{new Date(cmd.created_at).toLocaleString('fr-FR')}</span>
                 </div>
-                <p className="text-white font-bold">{cmd.client_nom} — <span className="text-amber-400">{cmd.client_telephone}</span></p>
-                <p className="text-xs text-slate-400">{cmd.adresse_livraison}</p>
+                <p className="text-white font-bold">{cmd.client_nom} — <span className="text-amber-500">{cmd.client_telephone}</span></p>
+                <p className="text-xs text-stone-400">{cmd.adresse_livraison}</p>
 
                 {cmd.commande_items && cmd.commande_items.length > 0 && (
-                  <ul className="mt-2 text-xs text-slate-300 space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <ul className="mt-2 text-xs text-stone-300 space-y-1 bg-stone-950 p-3 rounded-xl border border-stone-800">
                     {cmd.commande_items.map((it) => (
                       <li key={it.id}>• {it.quantite}x {it.nom_produit}</li>
                     ))}
@@ -113,16 +113,16 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 border-slate-800 pt-4 lg:pt-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 border-stone-800 pt-4 lg:pt-0">
                 <div className="text-right">
-                  <p className="text-xs text-slate-500 uppercase font-bold">Total</p>
+                  <p className="text-xs text-stone-500 uppercase font-bold">Total</p>
                   <p className="text-xl font-black text-white">{cmd.total.toLocaleString('fr-FR')} FCFA</p>
                 </div>
 
                 <select
                   value={cmd.statut}
                   onChange={(e) => handleUpdateStatus(cmd.id, e.target.value as StatutCommande)}
-                  className="bg-slate-950 border border-slate-800 text-white font-bold text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500"
+                  className="bg-stone-950 border border-stone-800 text-white font-bold text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500 transition-colors"
                 >
                   <option value="recue">Commande Reçue</option>
                   <option value="en_preparation">En Préparation</option>

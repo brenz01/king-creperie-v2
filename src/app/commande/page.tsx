@@ -13,6 +13,12 @@ const ZONES_LIVRAISON = [
   { id: 3, nom: 'Zone 3 (Plateau, Yoff, Maristes, VDN)', prix: 2000 },
 ];
 
+interface CommandeCreee {
+  id: string;
+  statut: string;
+  created_at: string;
+}
+
 export default function CommandePage() {
   const { cart, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
   const router = useRouter();
@@ -36,37 +42,43 @@ export default function CommandePage() {
     setErrorMsg('');
 
     try {
-      // 1. Insertion de la commande dans Supabase
-      const { data: commande, error: commandeError } = await supabase
-        .from('commandes')
-        .insert({
-          client_nom: nom,
-          client_telephone: telephone,
-          adresse_livraison: `${adresse} (${ZONES_LIVRAISON[zoneIndex].nom})`,
-          creneau_souhaite: creneau,
-          total: totalGeneral,
-          statut: 'recue',
+      // 1. Création de la commande via RPC (bypass le souci RETURNING/RLS)
+      const { data: commandeData, error: commandeError } = await supabase
+        .rpc('creer_commande', {
+          p_client_nom: nom,
+          p_client_telephone: telephone,
+          p_adresse_livraison: `${adresse} (${ZONES_LIVRAISON[zoneIndex].nom})`,
+          p_creneau_souhaite: creneau,
+          p_total: totalGeneral,
         })
-        .select()
         .single();
 
-      if (commandeError) throw commandeError;
+      if (commandeError) {
+        console.error('ERREUR COMMANDES:', JSON.stringify(commandeError, null, 2));
+        throw commandeError;
+      }
+
+      const commande = commandeData as CommandeCreee;
 
       // 2. Insertion des articles associés
       const itemsToInsert = cart.map((item) => ({
-  commande_id: commande.id,
-  produit_id: item.produit.id,
-  nom_produit: item.produit.nom,
-  quantite: item.quantite,
-  prix_unitaire: item.produit.prix, // reste le prix total affiché (base + extras)
-  extras: item.produit.extrasChoisis || [], // nouveau — snapshot exact pour la policy
-}));
+        commande_id: commande.id,
+        produit_id: item.produit.id,
+        nom_produit: item.produit.nom,
+        quantite: item.quantite,
+        prix_unitaire: item.produit.prix, // reste le prix total affiché (base + extras)
+        extras: item.produit.extrasChoisis || [], // snapshot exact pour la policy
+      }));
 
       const { error: itemsError } = await supabase
-        .from('commande_items')
-        .insert(itemsToInsert);
+  .from('commande_items')
+  .insert(itemsToInsert);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('ERREUR COMMANDE_ITEMS:', JSON.stringify(itemsError, null, 2));
+        console.error('ITEMS ENVOYÉS:', JSON.stringify(itemsToInsert, null, 2));
+        throw itemsError;
+      }
 
       // 3. Génération du message WhatsApp
       const itemsListText = cart
@@ -228,36 +240,39 @@ export default function CommandePage() {
           <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
 
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2 mb-6">
-            {cart.map((item) => (
-              <div key={item.produit.id} className="flex justify-between items-center border-b border-stone-100 pb-3">
-                <div className="flex-1 pr-2">
-                  <p className="font-bold text-stone-900 text-sm">{item.produit.nom}</p>
-                  <p className="text-xs text-amber-600 font-medium">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
-                </div>
+            {cart.map((item, index) => {
+              const cleExtras = (item.produit.extrasChoisis || []).map((e) => e.id).sort().join(',');
+              return (
+                <div key={`${item.produit.id}-${cleExtras}-${index}`} className="flex justify-between items-center border-b border-stone-100 pb-3">
+                  <div className="flex-1 pr-2">
+                    <p className="font-bold text-stone-900 text-sm">{item.produit.nom}</p>
+                    <p className="text-xs text-amber-600 font-medium">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateQuantity(item.produit.id, -1)}
-                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
-                  >
-                    -
-                  </button>
-                  <span className="text-sm font-bold w-4 text-center text-stone-900">{item.quantite}</span>
-                  <button
-                    onClick={() => updateQuantity(item.produit.id, 1)}
-                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => removeFromCart(item.produit.id)}
-                    className="text-rose-500 hover:text-rose-600 ml-2 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateQuantity(item.produit.id, -1)}
+                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="text-sm font-bold w-4 text-center text-stone-900">{item.quantite}</span>
+                    <button
+                      onClick={() => updateQuantity(item.produit.id, 1)}
+                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => removeFromCart(item.produit.id)}
+                      className="text-rose-500 hover:text-rose-600 ml-2 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="space-y-2 border-t border-stone-100 pt-4 text-sm">

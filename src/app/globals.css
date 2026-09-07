@@ -1,30 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
     /* Mode Clair (Côté Client / Commande / Suivi) */
-    --bg-primary: #FAFAF7;       /* Crème / Beurre Doux */
-    --bg-card: #FFFFFF;          /* Blanc Pur */
-    --text-primary: #1C1917;     /* Chocolat Noir */
-    --text-secondary: #78716C;   /* Moka Doux */
-    --accent: #D97706;           /* Caramel / Miel */
-    --accent-hover: #B45309;     /* Caramel Intense */
-    --border-color: #E7E5E4;     /* Bordure douce */
-    --success: #059669;          /* Vert Sauge / Pistache */
+    --bg-primary: #FAFAF7;
+    --bg-card: #FFFFFF;
+    --text-primary: #1C1917;
+    --text-secondary: #78716C;
+    --accent: #D97706;
+    --accent-hover: #B45309;
+    --border-color: #E7E5E4;
+    --success: #059669;
   }
 
   .dark {
-    /* Mode Sombre (Côté Admin / Dashboard Cuisine) */
-    --bg-primary: #1C1917;       /* Anthracite Chaud */
-    --bg-card: #262626;          /* Pierre Sombre */
-    --text-primary: #F5F5F4;     /* Crème Clair */
-    --text-secondary: #A8A29E;   /* Moka Clair */
-    --accent: #F59E0B;           /* Miel Brillant */
-    --accent-hover: #D97706;     /* Miel Chaud */
-    --border-color: #44403C;     /* Bordure Sombre */
-    --success: #10B981;          /* Vert Émeraude */
+    --bg-primary: #1C1917;
+    --bg-card: #262626;
+    --text-primary: #F5F5F4;
+    --text-secondary: #A8A29E;
+    --accent: #F59E0B;
+    --accent-hover: #D97706;
+    --border-color: #44403C;
+    --success: #10B981;
   }
 
   body {
@@ -35,7 +32,6 @@
   }
 }
 
-/* Classes utilitaires personnalisées */
 .bg-brand-cream { background-color: var(--bg-primary); }
 .bg-brand-card { background-color: var(--bg-card); }
 .text-brand-chocolate { color: var(--text-primary); }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -13,10 +12,23 @@ const ZONES_LIVRAISON = [
   { id: 3, nom: 'Zone 3 (Plateau, Yoff, Maristes, VDN)', prix: 2000 },
 ];
 
-interface CommandeCreee {
+interface ItemServeur {
+  produit_id: string;
+  nom_produit: string;
+  quantite: number;
+  prix_unitaire: number;
+  extras: Array<{ id: string; nom: string; prix: number }>;
+}
+
+interface ReponseCommande {
   id: string;
   statut: string;
   created_at: string;
+  sous_total: number;
+  frais_livraison: number;
+  total: number;
+  zone_nom: string;
+  items: ItemServeur[];
 }
 
 export default function CommandePage() {
@@ -32,7 +44,7 @@ export default function CommandePage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const fraisLivraison = ZONES_LIVRAISON[zoneIndex].prix;
-  const totalGeneral = totalAmount + fraisLivraison;
+  const totalGeneral = totalAmount + fraisLivraison; // affichage indicatif uniquement — le vrai total vient du serveur
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,47 +54,41 @@ export default function CommandePage() {
     setErrorMsg('');
 
     try {
-      // 1. Création de la commande via RPC (bypass le souci RETURNING/RLS)
-      const { data: commandeData, error: commandeError } = await supabase
-        .rpc('creer_commande', {
-          p_client_nom: nom,
-          p_client_telephone: telephone,
-          p_adresse_livraison: `${adresse} (${ZONES_LIVRAISON[zoneIndex].nom})`,
-          p_creneau_souhaite: creneau,
-          p_total: totalGeneral,
-        })
-        .single();
-
-      if (commandeError) {
-        console.error('ERREUR COMMANDES:', JSON.stringify(commandeError, null, 2));
-        throw commandeError;
-      }
-
-      const commande = commandeData as CommandeCreee;
-
-      // 2. Insertion des articles associés
-      const itemsToInsert = cart.map((item) => ({
-        commande_id: commande.id,
+      // On n'envoie que des IDs et quantités — jamais de prix.
+      // Le serveur recharge tout depuis la base et recalcule.
+      const itemsPourServeur = cart.map((item) => ({
         produit_id: item.produit.id,
-        nom_produit: item.produit.nom,
         quantite: item.quantite,
-        prix_unitaire: item.produit.prix, // reste le prix total affiché (base + extras)
-        extras: item.produit.extrasChoisis || [], // snapshot exact pour la policy
+        extras_ids: (item.produit.extrasChoisis || []).map((e) => e.id),
       }));
 
-      const { error: itemsError } = await supabase
-  .from('commande_items')
-  .insert(itemsToInsert);
+      const reponse = await fetch('/api/commandes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_nom: nom,
+          client_telephone: telephone,
+          adresse_precise: adresse,
+          zone_id: ZONES_LIVRAISON[zoneIndex].id,
+          creneau_souhaite: creneau,
+          items: itemsPourServeur,
+        }),
+      });
 
-      if (itemsError) {
-        console.error('ERREUR COMMANDE_ITEMS:', JSON.stringify(itemsError, null, 2));
-        console.error('ITEMS ENVOYÉS:', JSON.stringify(itemsToInsert, null, 2));
-        throw itemsError;
+      const data = await reponse.json();
+
+      if (!reponse.ok) {
+        console.error('ERREUR API COMMANDES:', data);
+        const messageDetail = Array.isArray(data.details) ? data.details.join(' ') : data.error;
+        throw new Error(messageDetail || 'Erreur lors de la création de la commande.');
       }
 
-      // 3. Génération du message WhatsApp
-      const itemsListText = cart
-        .map((item) => `• ${item.quantite}x ${item.produit.nom} (${(item.produit.prix * item.quantite).toLocaleString('fr-FR')} FCFA)`)
+      const commande = data as ReponseCommande;
+
+      // Génération du message WhatsApp avec les VRAIES données
+      // renvoyées par le serveur, jamais celles calculées côté client.
+      const itemsListText = commande.items
+        .map((item) => `• ${item.quantite}x ${item.nom_produit} (${(item.prix_unitaire * item.quantite).toLocaleString('fr-FR')} FCFA)`)
         .join('\n');
 
       const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '221778335781';
@@ -90,22 +96,21 @@ export default function CommandePage() {
         `🆔 *N° Commande :* #${commande.id.slice(0, 8)}\n` +
         `👤 *Client :* ${nom}\n` +
         `📞 *Tel :* ${telephone}\n` +
-        `📍 *Adresse :* ${adresse} (${ZONES_LIVRAISON[zoneIndex].nom})\n` +
+        `📍 *Adresse :* ${adresse} (${commande.zone_nom})\n` +
         `⏰ *Créneau :* ${creneau}\n\n` +
         `📜 *DÉTAILS DU PANIER :*\n${itemsListText}\n\n` +
-        `🚚 *Livraison :* ${fraisLivraison.toLocaleString('fr-FR')} FCFA\n` +
-        `💰 *TOTAL À PAYER :* *${totalGeneral.toLocaleString('fr-FR')} FCFA*\n\n` +
+        `🚚 *Livraison :* ${commande.frais_livraison.toLocaleString('fr-FR')} FCFA\n` +
+        `💰 *TOTAL À PAYER :* *${commande.total.toLocaleString('fr-FR')} FCFA*\n\n` +
         `🔗 *Suivi en direct :* ${window.location.origin}/suivi?id=${commande.id}`;
 
       const urlWhatsApp = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(textWhatsApp)}`;
 
-      // 4. Nettoyage du panier et redirection
       clearCart();
       window.open(urlWhatsApp, '_blank');
       router.push(`/suivi?id=${commande.id}`);
     } catch (err: any) {
       console.error('Erreur commande:', err);
-      setErrorMsg('Une erreur est survenue lors de la création de la commande.');
+      setErrorMsg(err.message || 'Une erreur est survenue lors de la création de la commande.');
     } finally {
       setLoading(false);
     }
@@ -147,7 +152,6 @@ export default function CommandePage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Formulaire Informations Client */}
         <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl space-y-5">
           <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Informations de livraison</h2>
 
@@ -235,7 +239,6 @@ export default function CommandePage() {
           </button>
         </form>
 
-        {/* Récapitulatif du Panier */}
         <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl h-fit">
           <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
 

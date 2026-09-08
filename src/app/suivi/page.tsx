@@ -84,18 +84,18 @@ function TrackingContent() {
     fetchSuivi();
 
     const channel = supabase
-      .channel(`commande-${commandeId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'commandes', filter: `id=eq.${commandeId}` },
-        (payload) => {
-          const nouveauStatut = payload.new.statut as StatutCommande;
-          const nouveauUpdatedAt = payload.new.updated_at as string;
-          setSuivi((prev) => prev ? { ...prev, statut: nouveauStatut, updated_at: nouveauUpdatedAt } : prev);
-          if (nouveauStatut === 'en_livraison') triggerCelebration();
-        }
-      )
-      .subscribe();
+  .channel(`commande-${commandeId}`, { config: { private: true } })
+  .on(
+    'broadcast',
+    { event: 'UPDATE' },
+    (payload) => {
+      const nouveauStatut = payload.payload.record.statut as StatutCommande;
+      const nouveauUpdatedAt = payload.payload.record.updated_at as string;
+      setSuivi((prev) => prev ? { ...prev, statut: nouveauStatut, updated_at: nouveauUpdatedAt } : prev);
+      if (nouveauStatut === 'en_livraison') triggerCelebration();
+    }
+  )
+  .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [commandeId]);

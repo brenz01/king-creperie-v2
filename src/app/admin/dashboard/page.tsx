@@ -25,27 +25,28 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    // Vérification de la session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push('/admin/login');
-    });
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session) {
+      router.push('/admin/login');
+      return;
+    }
+
+    // Nécessaire pour que Realtime connaisse l'identité de
+    // l'utilisateur et puisse évaluer is_staff() dans la policy.
+    supabase.realtime.setAuth(session.access_token);
 
     fetchCommandes();
 
-    // Abonnement Realtime pour la réception en direct des commandes
     const channel = supabase
-      .channel('admin-commandes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'commandes' },
-        () => fetchCommandes()
-      )
+      .channel('admin-commandes', { config: { private: true } })
+      .on('broadcast', { event: '*' }, () => fetchCommandes())
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  });
+}, []);
 
   const handleUpdateStatus = async (id: string, newStatut: StatutCommande) => {
     const { error } = await supabase

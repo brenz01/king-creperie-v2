@@ -15,6 +15,8 @@ export interface Produit {
   categorie: CategorieProduit;
   image_url?: string;
   disponible: boolean;
+  stock_gere?: boolean;
+  stock_quantite?: number | null;
   // Champs transitoires côté panier uniquement (jamais en base sur `produits`)
   extrasChoisis?: ExtraChoisi[];
   prixBase?: number;

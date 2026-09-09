@@ -235,9 +235,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (rpcError) {
-      console.error('Erreur creer_commande_complete:', rpcError);
-      return NextResponse.json({ error: 'Erreur lors de la création de la commande.' }, { status: 500 });
-    }
+  console.error('Erreur creer_commande_complete:', rpcError);
+  if (rpcError.message?.includes('Stock insuffisant')) {
+    return NextResponse.json(
+      { error: 'Un des articles de votre panier vient de rentrer en rupture de stock. Retournez au menu pour vérifier.' },
+      { status: 409 }
+    );
+  }
+  return NextResponse.json({ error: 'Erreur lors de la création de la commande.' }, { status: 500 });
+}
 
     const commande = Array.isArray(resultat) ? resultat[0] : resultat;
 

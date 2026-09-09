@@ -17,13 +17,40 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const reponse = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (error) {
-      setError('Identifiants incorrects.');
-      setLoading(false);
-    } else {
+      const data = await reponse.json();
+
+      if (!reponse.ok) {
+        setError(data.error || 'Identifiants incorrects.');
+        setLoading(false);
+        return;
+      }
+
+      // Établit la session côté client à partir des tokens renvoyés
+      // par la route serveur, pour que supabase-js (et Realtime)
+      // reconnaissent l'utilisateur comme connecté normalement.
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (sessionError) {
+        setError('Erreur lors de la connexion.');
+        setLoading(false);
+        return;
+      }
+
       router.push('/admin/dashboard');
+    } catch (err) {
+      console.error('Erreur login:', err);
+      setError('Erreur de connexion. Réessayez.');
+      setLoading(false);
     }
   };
 

@@ -16,6 +16,8 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
 
+  const estPersonnalisable = produit.categorie === 'salee' || produit.categorie === 'sucree';
+
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     addToCart(produit);
@@ -27,7 +29,6 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
     const nameLower = produit.nom.toLowerCase();
     const descLower = (produit.description || '').toLowerCase();
 
-    // 1. 🍫 Badge Gourmand
     if (nameLower.includes('nutella') || nameLower.includes('bueno') || nameLower.includes('kinder')) {
       return (
         <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-full border border-amber-200 shadow-sm">
@@ -35,7 +36,6 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
         </span>
       );
     }
-    // 2. 🌿 Badge Végétarien
     if (nameLower.includes('végé') || descLower.includes('végétarien') || nameLower.includes('légume')) {
       return (
         <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-900 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-200 shadow-sm">
@@ -43,7 +43,6 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
         </span>
       );
     }
-    // 3. ⭐ Badge Best-seller
     if (produit.prix >= 4500) {
       return (
         <span className="inline-flex items-center gap-1 bg-amber-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm">
@@ -51,7 +50,6 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
         </span>
       );
     }
-    // 4. 🧀 / ⚡ Badge Formule
     if (String(produit.categorie).toLowerCase() === 'formules') {
       return (
         <span className="inline-flex items-center gap-1 bg-stone-900 text-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm">
@@ -62,6 +60,32 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
     return null;
   };
 
+  // Badge de stock, visible uniquement si stock_gere = true
+  const renderBadgeStock = () => {
+    if (!produit.stock_gere || produit.stock_quantite === null || produit.stock_quantite === undefined) {
+      return null;
+    }
+    if (produit.stock_quantite === 0) {
+      return (
+        <span className="inline-flex items-center gap-1 bg-stone-800 text-stone-300 text-[10px] font-black px-2.5 py-1 rounded-full">
+          Épuisé
+        </span>
+      );
+    }
+    if (produit.stock_quantite <= 3) {
+      return (
+        <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-700 text-[10px] font-black px-2.5 py-1 rounded-full border border-rose-200 shadow-sm animate-pulse">
+          Plus que {produit.stock_quantite} !
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-[10px] font-bold px-2.5 py-1 rounded-full">
+        {produit.stock_quantite} en stock
+      </span>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -69,11 +93,12 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
       viewport={{ once: true }}
       whileHover={{ y: -6 }}
       transition={{ duration: 0.3 }}
-      onClick={() => onOpenCustomization && onOpenCustomization(produit)}
-      className="bg-white border border-stone-200/80 rounded-2xl overflow-hidden flex flex-col justify-between hover:border-amber-600/40 hover:shadow-xl transition-all shadow-sm group cursor-pointer"
+      onClick={() => estPersonnalisable && onOpenCustomization && onOpenCustomization(produit)}
+      className={`bg-white border border-stone-200/80 rounded-2xl overflow-hidden flex flex-col justify-between hover:border-amber-600/40 hover:shadow-xl transition-all shadow-sm group ${
+        estPersonnalisable ? 'cursor-pointer' : ''
+      }`}
     >
       <div>
-        {/* Photo avec Zoom Hover & Badges */}
         <div className="relative w-full h-48 bg-stone-100 overflow-hidden">
           {produit.image_url ? (
             <Image
@@ -92,10 +117,10 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
 
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             {renderBadge()}
+            {renderBadgeStock()}
           </div>
         </div>
 
-        {/* Détails du produit */}
         <div className="p-6">
           <div className="flex justify-between items-start gap-2 mb-3">
             <h3 className="text-xl font-bold text-stone-900 font-serif group-hover:text-amber-600 transition-colors">
@@ -114,9 +139,8 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="p-6 pt-0 flex gap-2">
-        {onOpenCustomization && (
+        {onOpenCustomization && estPersonnalisable && (
           <button
             type="button"
             onClick={(e) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock } from 'lucide-react';
@@ -24,6 +24,7 @@ interface ReponseCommande {
   id: string;
   statut: string;
   created_at: string;
+  deja_existante: boolean;
   sous_total: number;
   frais_livraison: number;
   total: number;
@@ -43,13 +44,26 @@ export default function CommandePage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Générée une seule fois au montage du composant — reste stable
+  // même en cas de double-clic, garantissant que les deux tentatives
+  // envoient la même clé et que le serveur détecte le doublon.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+
+  // Empêche tout envoi concurrent, en plus du state loading —
+  // filet de sécurité supplémentaire contre les double-clics
+  // qui pourraient survenir avant que le re-render (loading=true)
+  // ne désactive visuellement le bouton.
+  const envoiEnCoursRef = useRef(false);
+
   const fraisLivraison = ZONES_LIVRAISON[zoneIndex].prix;
   const totalGeneral = totalAmount + fraisLivraison; // affichage indicatif uniquement — le vrai total vient du serveur
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
+    if (envoiEnCoursRef.current) return; // ignore les clics pendant qu'une requête est déjà en vol
 
+    envoiEnCoursRef.current = true;
     setLoading(true);
     setErrorMsg('');
 
@@ -72,6 +86,7 @@ export default function CommandePage() {
           zone_id: ZONES_LIVRAISON[zoneIndex].id,
           creneau_souhaite: creneau,
           items: itemsPourServeur,
+          idempotency_key: idempotencyKeyRef.current,
         }),
       });
 
@@ -111,6 +126,10 @@ export default function CommandePage() {
     } catch (err: any) {
       console.error('Erreur commande:', err);
       setErrorMsg(err.message || 'Une erreur est survenue lors de la création de la commande.');
+      // En cas d'échec, on autorise un nouvel essai avec la MÊME clé
+      // (la requête n'a probablement pas abouti côté serveur, donc
+      // pas de risque de doublon en réessayant).
+      envoiEnCoursRef.current = false;
     } finally {
       setLoading(false);
     }

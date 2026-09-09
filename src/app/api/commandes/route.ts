@@ -21,6 +21,10 @@ const ZONES_LIVRAISON: Record<number, { nom: string; prix: number }> = {
 // avec ou sans le préfixe 221, espaces tolérés.
 const TELEPHONE_SN_REGEX = /^(?:\+?221)?[\s.-]?7[0-9](?:[\s.-]?[0-9]){7}$/;
 
+// Format UUID v4 basique — la clé d'idempotence doit être un vrai UUID
+// généré côté client (crypto.randomUUID()), pas une chaîne arbitraire.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface ItemPanier {
   produit_id: string;
   quantite: number;
@@ -34,6 +38,7 @@ interface RequeteCommande {
   zone_id: number;
   creneau_souhaite?: string;
   items: ItemPanier[];
+  idempotency_key?: string;
 }
 
 function nettoyerTexte(valeur: string, maxLength: number): string {
@@ -113,6 +118,13 @@ export async function POST(request: NextRequest) {
         erreurs.push(`Article #${index + 1} : format des extras invalide.`);
       }
     }
+
+    // La clé d'idempotence est optionnelle (rétro-compatibilité),
+    // mais si elle est fournie, elle doit être un UUID valide —
+    // sinon on l'ignore silencieusement plutôt que de bloquer la commande.
+    const idempotencyKey = typeof body.idempotency_key === 'string' && UUID_REGEX.test(body.idempotency_key)
+      ? body.idempotency_key
+      : null;
 
     if (erreurs.length > 0) {
       return NextResponse.json({ error: 'Validation échouée', details: erreurs }, { status: 400 });
@@ -207,11 +219,11 @@ export async function POST(request: NextRequest) {
     const totalGeneral = sousTotal + zone.prix;
 
     // ------------------------------------------------------------
-    // 4. TRANSACTION ATOMIQUE : commande + items, tout ou rien
+    // 4. TRANSACTION ATOMIQUE : commande + items, tout ou rien.
+    //    La fonction gère aussi l'idempotence : si idempotencyKey
+    //    correspond à une commande déjà créée, elle la renvoie
+    //    telle quelle au lieu d'en créer une nouvelle.
     // ------------------------------------------------------------
-    // Supabase-js n'expose pas de vraie transaction multi-statements
-    // côté client REST — on utilise un RPC Postgres qui fait tout
-    // dans une seule transaction serveur (voir migration SQL jointe).
     const { data: resultat, error: rpcError } = await supabaseAdmin.rpc('creer_commande_complete', {
       p_client_nom: clientNom,
       p_client_telephone: clientTelephone,
@@ -219,6 +231,7 @@ export async function POST(request: NextRequest) {
       p_creneau_souhaite: creneauSouhaite,
       p_total: totalGeneral,
       p_items: itemsValides,
+      p_idempotency_key: idempotencyKey,
     });
 
     if (rpcError) {
@@ -237,6 +250,7 @@ export async function POST(request: NextRequest) {
       id: commande.id,
       statut: commande.statut,
       created_at: commande.created_at,
+      deja_existante: commande.deja_existante || false,
       sous_total: sousTotal,
       frais_livraison: zone.prix,
       total: totalGeneral,

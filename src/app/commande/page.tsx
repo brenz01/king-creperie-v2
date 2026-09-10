@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock } from 'lucide-react';
+import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock, WifiOff, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 const ZONES_LIVRAISON = [
@@ -32,6 +32,8 @@ interface ReponseCommande {
   items: ItemServeur[];
 }
 
+type TypeErreur = 'reseau' | 'validation' | 'conflit' | 'serveur' | null;
+
 export default function CommandePage() {
   const { cart, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
   const router = useRouter();
@@ -43,65 +45,85 @@ export default function CommandePage() {
   const [creneau, setCreneau] = useState('Au plus vite');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [typeErreur, setTypeErreur] = useState<TypeErreur>(null);
 
-  // Générée une seule fois au montage du composant — reste stable
-  // même en cas de double-clic, garantissant que les deux tentatives
-  // envoient la même clé et que le serveur détecte le doublon.
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
-
-  // Empêche tout envoi concurrent, en plus du state loading —
-  // filet de sécurité supplémentaire contre les double-clics
-  // qui pourraient survenir avant que le re-render (loading=true)
-  // ne désactive visuellement le bouton.
   const envoiEnCoursRef = useRef(false);
 
   const fraisLivraison = ZONES_LIVRAISON[zoneIndex].prix;
-  const totalGeneral = totalAmount + fraisLivraison; // affichage indicatif uniquement — le vrai total vient du serveur
+  const totalGeneral = totalAmount + fraisLivraison;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const envoyerCommande = async () => {
     if (cart.length === 0) return;
-    if (envoiEnCoursRef.current) return; // ignore les clics pendant qu'une requête est déjà en vol
+    if (envoiEnCoursRef.current) return;
 
     envoiEnCoursRef.current = true;
     setLoading(true);
     setErrorMsg('');
+    setTypeErreur(null);
 
     try {
-      // On n'envoie que des IDs et quantités — jamais de prix.
-      // Le serveur recharge tout depuis la base et recalcule.
       const itemsPourServeur = cart.map((item) => ({
         produit_id: item.produit.id,
         quantite: item.quantite,
         extras_ids: (item.produit.extrasChoisis || []).map((e) => e.id),
       }));
 
-      const reponse = await fetch('/api/commandes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_nom: nom,
-          client_telephone: telephone,
-          adresse_precise: adresse,
-          zone_id: ZONES_LIVRAISON[zoneIndex].id,
-          creneau_souhaite: creneau,
-          items: itemsPourServeur,
-          idempotency_key: idempotencyKeyRef.current,
-        }),
-      });
+      let reponse: Response;
+      try {
+        reponse = await fetch('/api/commandes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_nom: nom,
+            client_telephone: telephone,
+            adresse_precise: adresse,
+            zone_id: ZONES_LIVRAISON[zoneIndex].id,
+            creneau_souhaite: creneau,
+            items: itemsPourServeur,
+            idempotency_key: idempotencyKeyRef.current,
+          }),
+        });
+      } catch (erreurReseau) {
+        // fetch() lève une exception uniquement en cas d'échec réseau
+        // réel (pas de connexion, timeout, DNS) — jamais pour un code
+        // HTTP d'erreur, qui est géré plus bas via reponse.ok.
+        console.error('Erreur réseau /api/commandes:', erreurReseau);
+        setTypeErreur('reseau');
+        setErrorMsg('Impossible de joindre le serveur. Vérifiez votre connexion internet.');
+        envoiEnCoursRef.current = false;
+        setLoading(false);
+        return;
+      }
 
       const data = await reponse.json();
 
       if (!reponse.ok) {
         console.error('ERREUR API COMMANDES:', data);
         const messageDetail = Array.isArray(data.details) ? data.details.join(' ') : data.error;
-        throw new Error(messageDetail || 'Erreur lors de la création de la commande.');
+
+        if (reponse.status === 400) {
+          setTypeErreur('validation');
+        } else if (reponse.status === 409 || reponse.status === 429) {
+          setTypeErreur('conflit');
+        } else {
+          setTypeErreur('serveur');
+        }
+
+        setErrorMsg(messageDetail || 'Une erreur est survenue lors de la création de la commande.');
+        // Erreurs de validation/conflit : on NE relâche PAS le verrou
+        // envoiEnCoursRef pour les erreurs déjà traitées par le
+        // serveur (la requête a abouti, pas de raison de retry avec
+        // les mêmes données) — sauf 500/reseau où un retry a du sens.
+        if (reponse.status >= 500) {
+          envoiEnCoursRef.current = false;
+        }
+        setLoading(false);
+        return;
       }
 
       const commande = data as ReponseCommande;
 
-      // Génération du message WhatsApp avec les VRAIES données
-      // renvoyées par le serveur, jamais celles calculées côté client.
       const itemsListText = commande.items
         .map((item) => `• ${item.quantite}x ${item.nom_produit} (${(item.prix_unitaire * item.quantite).toLocaleString('fr-FR')} FCFA)`)
         .join('\n');
@@ -124,16 +146,29 @@ export default function CommandePage() {
       window.open(urlWhatsApp, '_blank');
       router.push(`/suivi?id=${commande.id}`);
     } catch (err: any) {
-      console.error('Erreur commande:', err);
-      setErrorMsg(err.message || 'Une erreur est survenue lors de la création de la commande.');
-      // En cas d'échec, on autorise un nouvel essai avec la MÊME clé
-      // (la requête n'a probablement pas abouti côté serveur, donc
-      // pas de risque de doublon en réessayant).
+      console.error('Erreur commande inattendue:', err);
+      setTypeErreur('serveur');
+      setErrorMsg('Une erreur inattendue est survenue.');
       envoiEnCoursRef.current = false;
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await envoyerCommande();
+  };
+
+  const handleReessayer = async () => {
+    // Réutilise la MÊME clé d'idempotence — si la première tentative
+    // avait en fait abouti côté serveur malgré l'erreur perçue côté
+    // client, le serveur renverra la commande existante au lieu d'en
+    // créer une nouvelle.
+    await envoyerCommande();
+  };
+
+  const peutReessayer = typeErreur === 'reseau' || typeErreur === 'serveur';
 
   if (cart.length === 0) {
     return (
@@ -165,8 +200,22 @@ export default function CommandePage() {
       </h1>
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-sm font-medium">
-          {errorMsg}
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-sm font-medium flex items-start gap-3">
+          {typeErreur === 'reseau' && <WifiOff className="w-5 h-5 shrink-0 mt-0.5" />}
+          <div className="flex-1">
+            <p>{errorMsg}</p>
+            {peutReessayer && (
+              <button
+                type="button"
+                onClick={handleReessayer}
+                disabled={loading}
+                className="mt-3 inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>{loading ? 'Nouvelle tentative...' : 'Réessayer'}</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 

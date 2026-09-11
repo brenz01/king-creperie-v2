@@ -3,31 +3,32 @@
 @layer base {
   :root {
     /* Mode Clair (Côté Client / Commande / Suivi) */
-    --bg-primary: #FAFAF7;
+    --bg-primary: #FBF3E7;       /* Crème beurrée */
     --bg-card: #FFFFFF;
-    --text-primary: #1C1917;
-    --text-secondary: #78716C;
-    --accent: #D97706;
-    --accent-hover: #B45309;
-    --border-color: #E7E5E4;
-    --success: #059669;
+    --text-primary: #2A1B12;     /* Brun cacao */
+    --text-secondary: #6B5642;   /* Brun doux */
+    --accent: #B8621B;           /* Caramel brûlé */
+    --accent-hover: #9A5115;     /* Caramel foncé */
+    --border-color: #E7DCC8;     /* Beige ardoise */
+    --success: #6B8763;          /* Vert sauge */
   }
 
   .dark {
-    --bg-primary: #1C1917;
-    --bg-card: #262626;
-    --text-primary: #F5F5F4;
-    --text-secondary: #A8A29E;
-    --accent: #F59E0B;
-    --accent-hover: #D97706;
-    --border-color: #44403C;
-    --success: #10B981;
+    /* Mode Sombre (Côté Admin / Dashboard Cuisine) */
+    --bg-primary: #1C1712;
+    --bg-card: #26201A;
+    --text-primary: #F5EBDA;
+    --text-secondary: #C4B39B;
+    --accent: #DDA15E;           /* Miel doré, plus lumineux en sombre */
+    --accent-hover: #B8621B;
+    --border-color: #3D332A;
+    --success: #7FA377;
   }
 
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 }

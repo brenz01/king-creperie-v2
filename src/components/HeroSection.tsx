@@ -1,75 +1,88 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowDown, Utensils } from 'lucide-react';
+import { ArrowRight, Utensils } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-stone-950">
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-40 scale-105 filter brightness-90"
-      >
-        <source src="/videos/hero-bg.mp4" type="video/mp4" />
-      </video>
-
-      {/* Dégradé Chocolat & Ambre */}
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/50 to-black/70 z-10" />
-
-      <div className="relative z-20 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
+    <section className="relative w-full min-h-screen grid grid-cols-1 lg:grid-cols-2 items-stretch bg-brand-cream">
+      {/* Colonne texte */}
+      <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-24 lg:py-0 order-2 lg:order-1">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-600/20 border border-amber-500/30 text-amber-400 text-xs md:text-sm font-semibold uppercase tracking-widest mb-6 backdrop-blur-sm"
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="inline-flex items-center gap-2 mb-6 text-amber-700 text-xs sm:text-sm font-bold uppercase tracking-wide"
         >
-          <span>👑 Les Almadies · Dakar</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+          <span>Les Almadies · Dakar</span>
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-5xl md:text-8xl font-black text-stone-50 tracking-tight leading-none uppercase font-serif"
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="font-serif text-5xl sm:text-6xl lg:text-[3.6rem] leading-[1.02] text-stone-900 mb-6"
         >
-          KING <span className="text-amber-500 italic">CRÊPERIE</span>
+          La crêpe bretonne,
+          <br />
+          <em className="italic font-medium text-amber-700">version Dakar</em>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-6 text-base md:text-xl text-stone-200 font-light max-w-xl leading-relaxed"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-stone-600 text-base sm:text-lg max-w-md mb-10 leading-relaxed"
         >
-          L'authenticité de la crêpe bretonne retravaillée aux saveurs locales dakaroises. Une expérience gourmande d'exception.
+          Pâte tournée minute, garnitures locales, servie chaude sur commande. Une adresse de quartier qui prend la crêpe au sérieux.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="mt-10 flex flex-wrap justify-center gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.45 }}
+          className="flex flex-wrap gap-3"
         >
-          <a
-            href="#menu"
-            className="px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-full shadow-lg shadow-amber-600/25 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <Utensils className="w-5 h-5" />
-            <span>Découvrir le Menu</span>
+          <a href="#menu" className="inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-bold px-7 py-4 rounded-lg transition-colors">
+            <Utensils className="w-4 h-4" />
+            <span>Voir la carte</span>
+          </a>
+          <a href="/suivi" className="inline-flex items-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white font-bold px-6 py-4 rounded-lg transition-colors">
+            <span>Suivre ma commande</span>
+            <ArrowRight className="w-4 h-4" />
           </a>
         </motion.div>
       </div>
 
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-stone-400"
-      >
-        <ArrowDown className="w-6 h-6" />
-      </motion.div>
+      {/* Colonne vidéo */}
+      <div className="relative min-h-[340px] lg:min-h-0 order-1 lg:order-2 overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/videos/hero-bg.mp4" type="video/mp4" />
+        </video>
+
+        {/* Dégradé qui fond la vidéo vers le crème, pas de voile noir */}
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-cream via-transparent to-transparent lg:from-brand-cream lg:via-transparent lg:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="absolute bottom-6 left-6 lg:bottom-10 lg:left-10 bg-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-3"
+        >
+          <span className="font-serif text-2xl font-bold text-amber-700">50+</span>
+          <span className="text-xs text-stone-600 leading-tight max-w-[110px]">
+            crêpes et formules à composer
+          </span>
+        </motion.div>
+      </div>
     </section>
   );
 }

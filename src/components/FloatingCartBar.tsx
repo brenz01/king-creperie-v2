@@ -10,7 +10,6 @@ export default function FloatingCartBar() {
   const { totalCount, totalAmount } = useCart();
   const pathname = usePathname();
 
-  // Cacher la barre sur les pages de commande et de suivi
   if (totalCount === 0 || pathname === '/commande' || pathname === '/suivi') {
     return null;
   }
@@ -24,19 +23,19 @@ export default function FloatingCartBar() {
         transition={{ duration: 0.3 }}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-xl"
       >
-        <div className="bg-stone-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-stone-800/80 backdrop-blur-md">
+        <div className="bg-stone-900 text-white p-4 rounded-xl shadow-2xl flex items-center justify-between border border-stone-800/60">
           <div className="flex items-center gap-3">
-            <div className="relative bg-amber-600 text-white p-2.5 rounded-xl shadow-inner">
+            <div className="relative bg-amber-700 text-white p-2.5 rounded-lg">
               <ShoppingBag className="w-5 h-5" />
-              <span className="absolute -top-2 -right-2 bg-stone-900 text-amber-400 text-xs font-black rounded-full h-5 w-5 flex items-center justify-center border border-amber-500/30">
+              <span className="absolute -top-2 -right-2 bg-white text-stone-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                 {totalCount}
               </span>
             </div>
             <div>
-              <p className="text-xs uppercase font-bold text-stone-400 tracking-wider">
+              <p className="text-xs uppercase font-semibold text-stone-400 tracking-wide">
                 Votre commande
               </p>
-              <p className="font-extrabold text-lg text-stone-50">
+              <p className="font-serif font-semibold text-lg text-white">
                 {totalAmount.toLocaleString('fr-FR')} FCFA
               </p>
             </div>
@@ -44,7 +43,7 @@ export default function FloatingCartBar() {
 
           <Link
             href="/commande"
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm shadow-md shadow-amber-600/20"
+            className="bg-amber-700 hover:bg-amber-600 text-white font-semibold px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors text-sm"
           >
             <span>Valider</span>
             <ArrowRight className="w-4 h-4" />

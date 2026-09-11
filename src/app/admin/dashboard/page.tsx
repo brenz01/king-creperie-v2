@@ -39,6 +39,7 @@ export default function AdminDashboardPage() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [auditLog, setAuditLog] = useState<LigneAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sessionVerifiee, setSessionVerifiee] = useState(false);
   const router = useRouter();
 
   const fetchCommandes = async () => {
@@ -84,6 +85,8 @@ export default function AdminDashboardPage() {
         return;
       }
 
+      setSessionVerifiee(true);
+
       supabase.realtime.setAuth(session.access_token);
 
       fetchCommandes();
@@ -122,6 +125,17 @@ export default function AdminDashboardPage() {
     router.push('/admin/login');
   };
 
+  // Tant que la session n'est pas confirmée, on ne rend rien du
+  // contenu du dashboard — juste un état de chargement neutre.
+  // Évite le flash visuel du contenu admin avant redirection.
+  if (!sessionVerifiee) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-950">
+        <p className="text-amber-500 font-medium">Vérification de la session...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pt-28 pb-16 px-6 max-w-7xl mx-auto text-stone-100">
       <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-stone-800 pb-6">
@@ -149,7 +163,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Onglets */}
       <div className="flex gap-2 mb-8 flex-wrap">
         <button
           onClick={() => setOnglet('commandes')}
@@ -245,9 +258,6 @@ export default function AdminDashboardPage() {
   );
 }
 
-// ------------------------------------------------------------
-// Sous-composant : historique des changements de statut
-// ------------------------------------------------------------
 interface HistoriqueAuditProps {
   auditLog: LigneAuditLog[];
   commandes: Commande[];
@@ -307,9 +317,6 @@ function HistoriqueAudit({ auditLog, commandes, onRefresh }: HistoriqueAuditProp
   );
 }
 
-// ------------------------------------------------------------
-// Sous-composant : gestion des produits et du stock
-// ------------------------------------------------------------
 interface GestionProduitsProps {
   produits: Produit[];
   onRefresh: () => void;

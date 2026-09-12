@@ -124,7 +124,7 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
           </p>
         )}
 
-        <div className="mt-auto flex gap-2 pt-1">
+        <div className="mt-auto flex flex-col gap-2 pt-1">
           {onOpenCustomization && estPersonnalisable && (
             <button
               type="button"
@@ -132,10 +132,10 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
                 e.stopPropagation();
                 onOpenCustomization(produit);
               }}
-              className="p-2.5 rounded-lg border border-stone-200 hover:border-stone-900 hover:bg-stone-900 hover:text-white text-stone-600 transition-colors"
-              title="Personnaliser"
+              className="w-full py-2 rounded-lg border border-stone-200 hover:border-amber-700 hover:text-amber-800 text-stone-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Personnaliser les extras</span>
             </button>
           )}
 

@@ -32,9 +32,6 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Établit la session côté client à partir des tokens renvoyés
-      // par la route serveur, pour que supabase-js (et Realtime)
-      // reconnaissent l'utilisateur comme connecté normalement.
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
@@ -55,11 +52,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-16 px-6 flex items-center justify-center">
-      <div className="bg-stone-900 border border-stone-800 p-8 rounded-3xl w-full max-w-md shadow-xl">
+    <div className="min-h-screen pt-28 pb-16 px-6 flex items-center justify-center bg-[#1C1712]">
+      <div className="bg-[#26201A] border border-[#3D332A] p-8 rounded-2xl w-full max-w-md shadow-xl">
         <div className="text-center mb-6">
           <Crown className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-          <h1 className="text-2xl font-black font-serif text-white">Espace Admin</h1>
+          <h1 className="font-serif text-2xl font-semibold text-white">Espace Admin</h1>
           <p className="text-stone-400 text-sm">Gestion des commandes King Crêperie</p>
         </div>
 
@@ -71,7 +68,7 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Email</label>
+            <label className="block text-xs font-semibold uppercase text-stone-400 mb-1">Email</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
               <input
@@ -79,13 +76,13 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-950 border border-stone-800 rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-[#1C1712] border border-[#3D332A] rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Mot de passe</label>
+            <label className="block text-xs font-semibold uppercase text-stone-400 mb-1">Mot de passe</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
               <input
@@ -93,7 +90,7 @@ export default function AdminLoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-stone-950 border border-stone-800 rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-[#1C1712] border border-[#3D332A] rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
           </div>
@@ -101,7 +98,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-3 rounded-xl transition-all mt-2 shadow-md shadow-amber-600/20 active:scale-95 disabled:opacity-50"
+            className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all mt-2 shadow-md shadow-amber-600/20 active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>

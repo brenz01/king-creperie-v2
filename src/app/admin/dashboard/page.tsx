@@ -125,22 +125,19 @@ export default function AdminDashboardPage() {
     router.push('/admin/login');
   };
 
-  // Tant que la session n'est pas confirmée, on ne rend rien du
-  // contenu du dashboard — juste un état de chargement neutre.
-  // Évite le flash visuel du contenu admin avant redirection.
   if (!sessionVerifiee) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#1C1712]">
         <p className="text-amber-500 font-medium">Vérification de la session...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-28 pb-16 px-6 max-w-7xl mx-auto text-stone-100">
-      <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-stone-800 pb-6">
+    <div className="min-h-screen pt-28 pb-16 px-6 max-w-7xl mx-auto text-stone-100 bg-[#1C1712]">
+      <div className="flex flex-wrap justify-between items-center mb-8 gap-4 border-b border-[#3D332A] pb-6">
         <div>
-          <h1 className="text-3xl font-black font-serif text-white">Tableau de bord Staff</h1>
+          <h1 className="font-serif text-3xl font-semibold text-white">Tableau de bord Staff</h1>
           <p className="text-stone-400 text-sm">Gestion des commandes, produits et historique</p>
         </div>
 
@@ -148,7 +145,7 @@ export default function AdminDashboardPage() {
           {onglet === 'commandes' && (
             <button
               onClick={fetchCommandes}
-              className="p-3 bg-stone-900 border border-stone-800 rounded-xl text-stone-300 hover:text-white hover:border-stone-700 transition-colors"
+              className="p-3 bg-[#26201A] border border-[#3D332A] rounded-xl text-stone-300 hover:text-white hover:border-amber-600/50 transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
             </button>
@@ -169,7 +166,7 @@ export default function AdminDashboardPage() {
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${
             onglet === 'commandes'
               ? 'bg-amber-600 text-white'
-              : 'bg-stone-900 border border-stone-800 text-stone-400 hover:text-white'
+              : 'bg-[#26201A] border border-[#3D332A] text-stone-400 hover:text-white'
           }`}
         >
           <ClipboardList className="w-4 h-4" />
@@ -180,7 +177,7 @@ export default function AdminDashboardPage() {
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${
             onglet === 'produits'
               ? 'bg-amber-600 text-white'
-              : 'bg-stone-900 border border-stone-800 text-stone-400 hover:text-white'
+              : 'bg-[#26201A] border border-[#3D332A] text-stone-400 hover:text-white'
           }`}
         >
           <Package className="w-4 h-4" />
@@ -191,7 +188,7 @@ export default function AdminDashboardPage() {
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${
             onglet === 'historique'
               ? 'bg-amber-600 text-white'
-              : 'bg-stone-900 border border-stone-800 text-stone-400 hover:text-white'
+              : 'bg-[#26201A] border border-[#3D332A] text-stone-400 hover:text-white'
           }`}
         >
           <History className="w-4 h-4" />
@@ -205,7 +202,7 @@ export default function AdminDashboardPage() {
         ) : (
           <div className="space-y-4">
             {commandes.map((cmd) => (
-              <div key={cmd.id} className="bg-stone-900 border border-stone-800/80 p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-md">
+              <div key={cmd.id} className="bg-[#26201A] border border-[#3D332A] p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-md">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
                     <span className="font-mono font-bold text-amber-500 text-sm">#{cmd.id.slice(0, 8)}</span>
@@ -215,7 +212,7 @@ export default function AdminDashboardPage() {
                   <p className="text-xs text-stone-400">{cmd.adresse_livraison}</p>
 
                   {cmd.commande_items && cmd.commande_items.length > 0 && (
-                    <ul className="mt-2 text-xs text-stone-300 space-y-1 bg-stone-950 p-3 rounded-xl border border-stone-800">
+                    <ul className="mt-2 text-xs text-stone-300 space-y-1 bg-[#1C1712] p-3 rounded-xl border border-[#3D332A]">
                       {cmd.commande_items.map((it) => (
                         <li key={it.id}>• {it.quantite}x {it.nom_produit}</li>
                       ))}
@@ -223,16 +220,16 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 border-stone-800 pt-4 lg:pt-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 border-[#3D332A] pt-4 lg:pt-0">
                   <div className="text-right">
                     <p className="text-xs text-stone-500 uppercase font-bold">Total</p>
-                    <p className="text-xl font-black text-white">{cmd.total.toLocaleString('fr-FR')} FCFA</p>
+                    <p className="font-serif text-xl font-bold text-white">{cmd.total.toLocaleString('fr-FR')} FCFA</p>
                   </div>
 
                   <select
                     value={cmd.statut}
                     onChange={(e) => handleUpdateStatus(cmd.id, e.target.value as StatutCommande)}
-                    className="bg-stone-950 border border-stone-800 text-white font-bold text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500 transition-colors"
+                    className="bg-[#1C1712] border border-[#3D332A] text-white font-bold text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500 transition-colors"
                   >
                     <option value="recue">Commande Reçue</option>
                     <option value="en_preparation">En Préparation</option>
@@ -273,7 +270,7 @@ function HistoriqueAudit({ auditLog, commandes, onRefresh }: HistoriqueAuditProp
         <p className="text-stone-400 text-sm">{auditLog.length} changement{auditLog.length > 1 ? 's' : ''} récent{auditLog.length > 1 ? 's' : ''}</p>
         <button
           onClick={onRefresh}
-          className="p-2.5 bg-stone-900 border border-stone-800 rounded-xl text-stone-300 hover:text-white hover:border-stone-700 transition-colors"
+          className="p-2.5 bg-[#26201A] border border-[#3D332A] rounded-xl text-stone-300 hover:text-white hover:border-amber-600/50 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -288,7 +285,7 @@ function HistoriqueAudit({ auditLog, commandes, onRefresh }: HistoriqueAuditProp
             return (
               <div
                 key={ligne.id}
-                className="bg-stone-900 border border-stone-800/80 px-5 py-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                className="bg-[#26201A] border border-[#3D332A] px-5 py-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-mono text-xs text-stone-500">#{ligne.commande_id.slice(0, 8)}</span>
@@ -398,8 +395,8 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
         return (
           <div
             key={produit.id}
-            className={`bg-stone-900 border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-              stockBas ? 'border-amber-500/50' : 'border-stone-800/80'
+            className={`bg-[#26201A] border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+              stockBas ? 'border-amber-500/50' : 'border-[#3D332A]'
             }`}
           >
             <div className="flex-1">
@@ -443,7 +440,7 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
                   min={0}
                   value={valeurs.stock_quantite ?? 0}
                   onChange={(e) => modifierChamp(produit.id, produit, 'stock_quantite', Math.max(0, Number(e.target.value)))}
-                  className="w-20 bg-stone-950 border border-stone-800 text-white text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500"
+                  className="w-20 bg-[#1C1712] border border-[#3D332A] text-white text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500"
                 />
               )}
 
@@ -451,7 +448,7 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
                 <button
                   onClick={() => sauvegarder(produit.id)}
                   disabled={sauvegardeEnCours === produit.id}
-                  className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{sauvegardeEnCours === produit.id ? '...' : 'Enregistrer'}</span>

@@ -85,9 +85,6 @@ export default function CommandePage() {
           }),
         });
       } catch (erreurReseau) {
-        // fetch() lève une exception uniquement en cas d'échec réseau
-        // réel (pas de connexion, timeout, DNS) — jamais pour un code
-        // HTTP d'erreur, qui est géré plus bas via reponse.ok.
         console.error('Erreur réseau /api/commandes:', erreurReseau);
         setTypeErreur('reseau');
         setErrorMsg('Impossible de joindre le serveur. Vérifiez votre connexion internet.');
@@ -111,10 +108,6 @@ export default function CommandePage() {
         }
 
         setErrorMsg(messageDetail || 'Une erreur est survenue lors de la création de la commande.');
-        // Erreurs de validation/conflit : on NE relâche PAS le verrou
-        // envoiEnCoursRef pour les erreurs déjà traitées par le
-        // serveur (la requête a abouti, pas de raison de retry avec
-        // les mêmes données) — sauf 500/reseau où un retry a du sens.
         if (reponse.status >= 500) {
           envoiEnCoursRef.current = false;
         }
@@ -161,10 +154,6 @@ export default function CommandePage() {
   };
 
   const handleReessayer = async () => {
-    // Réutilise la MÊME clé d'idempotence — si la première tentative
-    // avait en fait abouti côté serveur malgré l'erreur perçue côté
-    // client, le serveur renverra la commande existante au lieu d'en
-    // créer une nouvelle.
     await envoyerCommande();
   };
 
@@ -173,12 +162,12 @@ export default function CommandePage() {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen pt-32 pb-16 px-6 max-w-2xl mx-auto text-center flex flex-col items-center justify-center">
-        <div className="bg-white border border-stone-200/80 shadow-sm p-8 rounded-3xl w-full">
-          <h1 className="text-2xl font-bold font-serif text-stone-900 mb-2">Votre panier est vide</h1>
+        <div className="bg-white border border-stone-200/80 shadow-sm p-8 rounded-2xl w-full">
+          <h1 className="font-serif text-2xl font-semibold text-stone-900 mb-2">Votre panier est vide</h1>
           <p className="text-stone-500 mb-6">Ajoutez quelques crêpes depuis notre carte avant d'effectuer une commande.</p>
           <Link
             href="/#menu"
-            className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-full transition-all shadow-md shadow-amber-600/20"
+            className="inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Retourner au Menu</span>
@@ -190,13 +179,13 @@ export default function CommandePage() {
 
   return (
     <div className="min-h-screen pt-28 pb-16 px-6 max-w-5xl mx-auto">
-      <Link href="/#menu" className="inline-flex items-center gap-2 text-stone-500 hover:text-amber-600 text-sm mb-6 transition-colors">
+      <Link href="/#menu" className="inline-flex items-center gap-2 text-stone-500 hover:text-amber-700 text-sm mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4" />
         <span>Continuer mes achats</span>
       </Link>
 
-      <h1 className="text-3xl md:text-4xl font-black font-serif text-stone-900 mb-8">
-        Validation de la <span className="text-amber-600">Commande</span>
+      <h1 className="font-serif text-3xl md:text-4xl font-semibold text-stone-900 mb-8">
+        Validation de la <span className="italic text-amber-700">commande</span>
       </h1>
 
       {errorMsg && (
@@ -220,11 +209,11 @@ export default function CommandePage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl space-y-5">
-          <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Informations de livraison</h2>
+        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-2xl space-y-5">
+          <h2 className="font-serif text-xl font-semibold text-stone-900 mb-4 border-b border-stone-100 pb-3">Informations de livraison</h2>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Nom & Prénom</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Nom & Prénom</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
@@ -233,13 +222,13 @@ export default function CommandePage() {
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex: Babacar Diop"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Numéro Téléphone</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Numéro Téléphone</label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
@@ -248,17 +237,17 @@ export default function CommandePage() {
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
                 placeholder="Ex: 77 000 00 00"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Zone de livraison</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Zone de livraison</label>
             <select
               value={zoneIndex}
               onChange={(e) => setZoneIndex(Number(e.target.value))}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 px-4 text-stone-900 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
+              className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 px-4 text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
             >
               {ZONES_LIVRAISON.map((z, idx) => (
                 <option key={z.id} value={idx}>
@@ -269,7 +258,7 @@ export default function CommandePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Adresse Précise</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Adresse Précise</label>
             <div className="relative">
               <MapPin className="absolute left-4 top-3 text-stone-400 w-5 h-5" />
               <textarea
@@ -278,13 +267,13 @@ export default function CommandePage() {
                 value={adresse}
                 onChange={(e) => setAdresse(e.target.value)}
                 placeholder="Rue, Immeuble, Appt, Repère visuel..."
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Créneau Souhaité</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Créneau Souhaité</label>
             <div className="relative">
               <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
               <input
@@ -292,7 +281,7 @@ export default function CommandePage() {
                 value={creneau}
                 onChange={(e) => setCreneau(e.target.value)}
                 placeholder="Ex: Au plus vite / 20h00"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-all"
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
               />
             </div>
           </div>
@@ -300,15 +289,15 @@ export default function CommandePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
+            className="w-full mt-4 bg-stone-900 hover:bg-amber-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.99] disabled:opacity-50"
           >
             <Send className="w-5 h-5" />
             <span>{loading ? 'Traitement...' : 'Envoyer la commande via WhatsApp'}</span>
           </button>
         </form>
 
-        <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-3xl h-fit">
-          <h2 className="text-xl font-bold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
+        <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-2xl h-fit">
+          <h2 className="font-serif text-xl font-semibold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
 
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2 mb-6">
             {cart.map((item, index) => {
@@ -316,21 +305,21 @@ export default function CommandePage() {
               return (
                 <div key={`${item.produit.id}-${cleExtras}-${index}`} className="flex justify-between items-center border-b border-stone-100 pb-3">
                   <div className="flex-1 pr-2">
-                    <p className="font-bold text-stone-900 text-sm">{item.produit.nom}</p>
-                    <p className="text-xs text-amber-600 font-medium">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
+                    <p className="font-semibold text-stone-900 text-sm">{item.produit.nom}</p>
+                    <p className="text-xs text-amber-700 font-medium">{item.produit.prix.toLocaleString('fr-FR')} FCFA</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.produit.id, -1)}
-                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
+                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-md flex items-center justify-center font-bold transition-colors"
                     >
                       -
                     </button>
                     <span className="text-sm font-bold w-4 text-center text-stone-900">{item.quantite}</span>
                     <button
                       onClick={() => updateQuantity(item.produit.id, 1)}
-                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-lg flex items-center justify-center font-bold transition-colors"
+                      className="bg-stone-100 hover:bg-stone-200 text-stone-800 w-7 h-7 rounded-md flex items-center justify-center font-bold transition-colors"
                     >
                       +
                     </button>
@@ -355,7 +344,7 @@ export default function CommandePage() {
               <span>Frais de livraison</span>
               <span className="font-medium text-stone-800">{fraisLivraison.toLocaleString('fr-FR')} FCFA</span>
             </div>
-            <div className="flex justify-between text-lg font-black text-amber-600 border-t border-stone-100 pt-3">
+            <div className="flex justify-between text-lg font-serif font-semibold text-amber-700 border-t border-stone-100 pt-3">
               <span>Total Général</span>
               <span>{totalGeneral.toLocaleString('fr-FR')} FCFA</span>
             </div>

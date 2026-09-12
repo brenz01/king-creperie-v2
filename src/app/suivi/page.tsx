@@ -11,7 +11,6 @@ import {
 
 type StatutCommande = 'recue' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 
-// Ce que le RPC public renvoie désormais — volontairement minimal
 interface SuiviPublic {
   id: string;
   statut: StatutCommande;
@@ -48,7 +47,7 @@ function TrackingContent() {
       particleCount: 120,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#d97706', '#f59e0b', '#10b981', '#1c1917'],
+      colors: ['#B8621B', '#DDA15E', '#6B8763', '#2A1B12'],
     });
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate([200, 100, 200, 100, 300]);
@@ -84,25 +83,25 @@ function TrackingContent() {
     fetchSuivi();
 
     const channel = supabase
-  .channel(`commande-${commandeId}`, { config: { private: true } })
-  .on(
-    'broadcast',
-    { event: 'UPDATE' },
-    (payload) => {
-      const nouveauStatut = payload.payload.record.statut as StatutCommande;
-      const nouveauUpdatedAt = payload.payload.record.updated_at as string;
-      setSuivi((prev) => prev ? { ...prev, statut: nouveauStatut, updated_at: nouveauUpdatedAt } : prev);
-      if (nouveauStatut === 'en_livraison') triggerCelebration();
-    }
-  )
-  .subscribe();
+      .channel(`commande-${commandeId}`, { config: { private: true } })
+      .on(
+        'broadcast',
+        { event: 'UPDATE' },
+        (payload) => {
+          const nouveauStatut = payload.payload.record.statut as StatutCommande;
+          const nouveauUpdatedAt = payload.payload.record.updated_at as string;
+          setSuivi((prev) => prev ? { ...prev, statut: nouveauStatut, updated_at: nouveauUpdatedAt } : prev);
+          if (nouveauStatut === 'en_livraison') triggerCelebration();
+        }
+      )
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [commandeId]);
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-amber-600 gap-3">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-amber-700 gap-3">
         <Loader2 className="w-10 h-10 animate-spin" />
         <p className="text-stone-600 font-medium text-sm">Chargement du suivi de commande...</p>
       </div>
@@ -111,7 +110,7 @@ function TrackingContent() {
 
   if (erreur || !suivi) {
     return (
-      <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-3xl border border-stone-200 shadow-sm text-center">
+      <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-2xl border border-stone-200 shadow-sm text-center">
         <p className="text-amber-700 font-bold mb-2">Oups !</p>
         <p className="text-stone-600 text-sm">{erreur || 'Commande inexistante'}</p>
       </div>
@@ -123,11 +122,11 @@ function TrackingContent() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-sm mb-8 text-center">
-        <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-sm mb-8 text-center">
+        <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
           En direct de la cuisine
         </span>
-        <h1 className="text-2xl sm:text-3xl font-serif font-black text-stone-900 mt-2">
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-stone-900 mt-2">
           Commande #{suivi.id.slice(0, 8)}
         </h1>
         <p className="text-xs text-stone-400 mt-1 flex items-center gap-1 justify-center">
@@ -136,13 +135,13 @@ function TrackingContent() {
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-sm">
-        <h2 className="text-lg font-bold text-stone-900 mb-6">Statut de la préparation</h2>
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-sm">
+        <h2 className="font-serif text-lg font-semibold text-stone-900 mb-6">Statut de la préparation</h2>
 
         <div className="relative mb-10">
           <div className="absolute top-1/2 left-0 right-0 h-2 bg-stone-100 -translate-y-1/2 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-amber-600 rounded-full"
+              className="h-full bg-amber-700 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
               transition={{ duration: 0.6, ease: 'easeInOut' }}
@@ -158,9 +157,9 @@ function TrackingContent() {
                   key={etape.key}
                   animate={isCurrent ? { scale: [1, 1.15, 1] } : { scale: 1 }}
                   transition={isCurrent ? { repeat: Infinity, duration: 2 } : {}}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
-                    isCompleted ? 'bg-amber-600 text-white'
-                      : isCurrent ? 'bg-amber-500 text-white ring-4 ring-amber-100'
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                    isCompleted ? 'bg-amber-700 text-white'
+                      : isCurrent ? 'bg-stone-900 text-white ring-4 ring-amber-100'
                       : 'bg-white border-2 border-stone-200 text-stone-400'
                   }`}
                 >
@@ -177,18 +176,18 @@ function TrackingContent() {
             const isCurrent = index === currentStepIndex;
             const Icon = etape.icon;
             return (
-              <div key={etape.key} className={`flex items-start gap-4 p-4 rounded-2xl transition-all ${
-                isCurrent ? 'bg-amber-50/80 border border-amber-200/60 shadow-sm'
+              <div key={etape.key} className={`flex items-start gap-4 p-4 rounded-xl transition-all ${
+                isCurrent ? 'bg-amber-50/70 border border-amber-200/50 shadow-sm'
                   : isCompleted ? 'opacity-80' : 'opacity-40'
               }`}>
-                <div className={`p-2.5 rounded-xl shrink-0 ${
-                  isCurrent ? 'bg-amber-600 text-white'
+                <div className={`p-2.5 rounded-lg shrink-0 ${
+                  isCurrent ? 'bg-stone-900 text-white'
                     : isCompleted ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-400'
                 }`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-sm sm:text-base ${isCurrent ? 'text-amber-950 font-extrabold' : 'text-stone-800'}`}>
+                  <h3 className={`font-semibold text-sm sm:text-base ${isCurrent ? 'text-stone-900' : 'text-stone-800'}`}>
                     {etape.titre}
                   </h3>
                   <p className="text-xs sm:text-sm text-stone-500 mt-0.5">{etape.description}</p>
@@ -206,7 +205,7 @@ export default function SuiviPage() {
   return (
     <main className="min-h-screen bg-brand-cream/50">
       <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center text-amber-600">
+        <div className="min-h-screen flex items-center justify-center text-amber-700">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
       }>

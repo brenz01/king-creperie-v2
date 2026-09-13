@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock, WifiOff, RefreshCw } from 'lucide-react';
+import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock, WifiOff, RefreshCw, Truck } from 'lucide-react';
 import Link from 'next/link';
 
 const ZONES_LIVRAISON = [
@@ -38,10 +38,13 @@ export default function CommandePage() {
   const { cart, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
   const router = useRouter();
 
+  // La zone est maintenant définie en premier dans le flux visuel,
+  // donc initialisée à null pour forcer un choix explicite plutôt
+  // qu'une valeur par défaut invisible qu'on découvre à la fin.
+  const [zoneIndex, setZoneIndex] = useState<number | null>(null);
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
-  const [zoneIndex, setZoneIndex] = useState(0);
   const [creneau, setCreneau] = useState('Au plus vite');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -50,11 +53,13 @@ export default function CommandePage() {
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
   const envoiEnCoursRef = useRef(false);
 
-  const fraisLivraison = ZONES_LIVRAISON[zoneIndex].prix;
+  const zoneChoisie = zoneIndex !== null ? ZONES_LIVRAISON[zoneIndex] : null;
+  const fraisLivraison = zoneChoisie?.prix ?? 0;
   const totalGeneral = totalAmount + fraisLivraison;
 
   const envoyerCommande = async () => {
     if (cart.length === 0) return;
+    if (zoneIndex === null) return;
     if (envoiEnCoursRef.current) return;
 
     envoiEnCoursRef.current = true;
@@ -210,93 +215,117 @@ export default function CommandePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-2xl space-y-5">
-          <h2 className="font-serif text-xl font-semibold text-stone-900 mb-4 border-b border-stone-100 pb-3">Informations de livraison</h2>
 
+          {/* ÉTAPE 1 — Zone de livraison EN PREMIER, pour que le vrai
+              total (avec frais) soit visible avant que le client
+              investisse du temps à remplir ses coordonnées. */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Nom & Prénom</label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
-              <input
-                type="text"
-                required
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-                placeholder="Ex: Babacar Diop"
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
-              />
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100">
+              <span className="w-6 h-6 rounded-full bg-stone-900 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+              <h2 className="font-serif text-xl font-semibold text-stone-900">Où livrer ?</h2>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Numéro Téléphone</label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
-              <input
-                type="tel"
-                required
-                value={telephone}
-                onChange={(e) => setTelephone(e.target.value)}
-                placeholder="Ex: 77 000 00 00"
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Zone de livraison</label>
-            <select
-              value={zoneIndex}
-              onChange={(e) => setZoneIndex(Number(e.target.value))}
-              className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 px-4 text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
-            >
-              {ZONES_LIVRAISON.map((z, idx) => (
-                <option key={z.id} value={idx}>
-                  {z.nom} (+{z.prix} FCFA)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Adresse Précise</label>
             <div className="relative">
-              <MapPin className="absolute left-4 top-3 text-stone-400 w-5 h-5" />
-              <textarea
+              <Truck className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5 pointer-events-none" />
+              <select
                 required
-                rows={2}
-                value={adresse}
-                onChange={(e) => setAdresse(e.target.value)}
-                placeholder="Rue, Immeuble, Appt, Repère visuel..."
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
-              />
+                value={zoneIndex ?? ''}
+                onChange={(e) => setZoneIndex(e.target.value === '' ? null : Number(e.target.value))}
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
+              >
+                <option value="" disabled>Sélectionnez votre zone</option>
+                {ZONES_LIVRAISON.map((z, idx) => (
+                  <option key={z.id} value={idx}>
+                    {z.nom} (+{z.prix.toLocaleString('fr-FR')} FCFA)
+                  </option>
+                ))}
+              </select>
             </div>
+            {zoneChoisie && (
+              <p className="text-xs text-amber-700 font-medium mt-2">
+                Frais de livraison : {zoneChoisie.prix.toLocaleString('fr-FR')} FCFA — total mis à jour ci-contre →
+              </p>
+            )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Créneau Souhaité</label>
-            <div className="relative">
-              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
-              <input
-                type="text"
-                value={creneau}
-                onChange={(e) => setCreneau(e.target.value)}
-                placeholder="Ex: Au plus vite / 20h00"
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
-              />
+          {/* ÉTAPE 2 — Coordonnées, seulement une fois le prix connu */}
+          <div className={`space-y-5 transition-opacity ${zoneIndex === null ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+            <div className="flex items-center gap-2 pt-2 pb-3 border-b border-stone-100">
+              <span className="w-6 h-6 rounded-full bg-stone-900 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+              <h2 className="font-serif text-xl font-semibold text-stone-900">Vos coordonnées</h2>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-4 bg-stone-900 hover:bg-amber-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.99] disabled:opacity-50"
-          >
-            <Send className="w-5 h-5" />
-            <span>{loading ? 'Traitement...' : 'Envoyer la commande via WhatsApp'}</span>
-          </button>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Nom & Prénom</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
+                <input
+                  type="text"
+                  required
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  placeholder="Ex: Babacar Diop"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Numéro Téléphone</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
+                <input
+                  type="tel"
+                  required
+                  value={telephone}
+                  onChange={(e) => setTelephone(e.target.value)}
+                  placeholder="Ex: 77 000 00 00"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Adresse Précise</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-3 text-stone-400 w-5 h-5" />
+                <textarea
+                  required
+                  rows={2}
+                  value={adresse}
+                  onChange={(e) => setAdresse(e.target.value)}
+                  placeholder="Rue, Immeuble, Appt, Repère visuel..."
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Créneau Souhaité</label>
+              <div className="relative">
+                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={creneau}
+                  onChange={(e) => setCreneau(e.target.value)}
+                  placeholder="Ex: Au plus vite / 20h00"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg py-3 pl-12 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || zoneIndex === null}
+              className="w-full mt-4 bg-stone-900 hover:bg-amber-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.99] disabled:opacity-50"
+            >
+              <Send className="w-5 h-5" />
+              <span>{loading ? 'Traitement...' : 'Envoyer la commande via WhatsApp'}</span>
+            </button>
+          </div>
         </form>
 
-        <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-2xl h-fit">
+        <div className="lg:col-span-5 bg-white border border-stone-200/80 shadow-sm p-6 md:p-8 rounded-2xl h-fit lg:sticky lg:top-28">
           <h2 className="font-serif text-xl font-semibold text-stone-900 mb-4 border-b border-stone-100 pb-3">Récapitulatif</h2>
 
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2 mb-6">
@@ -342,7 +371,9 @@ export default function CommandePage() {
             </div>
             <div className="flex justify-between text-stone-500">
               <span>Frais de livraison</span>
-              <span className="font-medium text-stone-800">{fraisLivraison.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-medium text-stone-800">
+                {zoneChoisie ? `${fraisLivraison.toLocaleString('fr-FR')} FCFA` : '— (choisir une zone)'}
+              </span>
             </div>
             <div className="flex justify-between text-lg font-serif font-semibold text-amber-700 border-t border-stone-100 pt-3">
               <span>Total Général</span>

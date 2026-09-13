@@ -140,9 +140,11 @@ export default function CommandePage() {
 
       const urlWhatsApp = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(textWhatsApp)}`;
 
-      clearCart();
-      window.open(urlWhatsApp, '_blank');
-      router.push(`/suivi?id=${commande.id}`);
+localStorage.setItem('king_creperie_derniere_commande', commande.id);
+clearCart();
+window.open(urlWhatsApp, '_blank');
+router.push(`/suivi?id=${commande.id}`);
+
     } catch (err: any) {
       console.error('Erreur commande inattendue:', err);
       setTypeErreur('serveur');

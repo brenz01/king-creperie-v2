@@ -1,13 +1,14 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
-  Inbox, CookingPot, PartyPopper, CheckCircle2, Clock, Loader2
+  Inbox, CookingPot, PartyPopper, CheckCircle2, Clock, Loader2, Timer, ShoppingBag
 } from 'lucide-react';
+import Link from 'next/link';
 
 type StatutCommande = 'recue' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 
@@ -16,6 +17,24 @@ interface SuiviPublic {
   statut: StatutCommande;
   updated_at: string;
   created_at: string;
+}
+
+const ESTIMATION_MINUTES: Record<StatutCommande, number> = {
+  recue: 5,
+  en_preparation: 15,
+  en_livraison: 20,
+  livree: 0,
+  annulee: 0,
+};
+
+function estimationTotaleRestante(statutActuel: StatutCommande): number {
+  const ordre: StatutCommande[] = ['recue', 'en_preparation', 'en_livraison', 'livree'];
+  const indexActuel = ordre.indexOf(statutActuel);
+  if (indexActuel === -1 || statutActuel === 'livree' || statutActuel === 'annulee') return 0;
+
+  return ordre
+    .slice(indexActuel, -1)
+    .reduce((total, etape) => total + ESTIMATION_MINUTES[etape], 0);
 }
 
 const ETAPES: Array<{
@@ -34,9 +53,19 @@ const ORDER_INDEX: Record<StatutCommande, number> = {
   recue: 0, en_preparation: 1, en_livraison: 2, livree: 3, annulee: -1,
 };
 
+const CLE_LOCALSTORAGE = 'king_creperie_derniere_commande';
+
 function TrackingContent() {
   const searchParams = useSearchParams();
-  const commandeId = searchParams.get('id');
+  const router = useRouter();
+  const commandeIdUrl = searchParams.get('id');
+
+  // Résolution de l'ID : priorité au paramètre d'URL explicite,
+  // sinon on retombe sur la dernière commande connue de CE navigateur.
+  // On ne fait ça qu'une fois au montage, pas à chaque render.
+  const [commandeId, setCommandeId] = useState<string | null>(commandeIdUrl);
+  const [idVientDuStockage, setIdVientDuStockage] = useState(false);
+  const [resolutionTerminee, setResolutionTerminee] = useState(false);
 
   const [suivi, setSuivi] = useState<SuiviPublic | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,10 +83,36 @@ function TrackingContent() {
     }
   };
 
+  // Étape 1 — résoudre quel ID utiliser (URL explicite, ou localStorage
+  // en secours). Se fait avant tout fetch, une seule fois.
   useEffect(() => {
+    if (commandeIdUrl) {
+      setCommandeId(commandeIdUrl);
+      setResolutionTerminee(true);
+      return;
+    }
+
+    try {
+      const derniereCommande = localStorage.getItem(CLE_LOCALSTORAGE);
+      if (derniereCommande) {
+        setCommandeId(derniereCommande);
+        setIdVientDuStockage(true);
+      }
+    } catch {
+      // localStorage indisponible (navigation privée stricte, etc.)
+      // — on continue simplement sans ID, l'écran d'erreur habituel
+      // s'affichera, ce qui reste correct dans ce cas.
+    }
+    setResolutionTerminee(true);
+  }, [commandeIdUrl]);
+
+  // Étape 2 — une fois l'ID résolu, fetch + abonnement Realtime.
+  useEffect(() => {
+    if (!resolutionTerminee) return;
+
     if (!commandeId) {
       setLoading(false);
-      setErreur('Aucun identifiant de commande fourni dans l\u2019URL.');
+      setErreur('Aucune commande récente trouvée sur cet appareil.');
       return;
     }
 
@@ -97,9 +152,9 @@ function TrackingContent() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [commandeId]);
+  }, [commandeId, resolutionTerminee]);
 
-  if (loading) {
+  if (!resolutionTerminee || loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-amber-700 gap-3">
         <Loader2 className="w-10 h-10 animate-spin" />
@@ -111,17 +166,36 @@ function TrackingContent() {
   if (erreur || !suivi) {
     return (
       <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-2xl border border-stone-200 shadow-sm text-center">
-        <p className="text-amber-700 font-bold mb-2">Oups !</p>
-        <p className="text-stone-600 text-sm">{erreur || 'Commande inexistante'}</p>
+        <ShoppingBag className="w-10 h-10 text-stone-300 mx-auto mb-3" />
+        <p className="text-amber-700 font-bold mb-2">
+          {commandeIdUrl ? 'Commande introuvable' : 'Aucune commande à suivre'}
+        </p>
+        <p className="text-stone-600 text-sm mb-5">
+          {erreur || 'Commande inexistante'}
+        </p>
+        <Link
+          href="/#menu"
+          className="inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+        >
+          <span>Voir la carte</span>
+        </Link>
       </div>
     );
   }
 
   const currentStepIndex = Math.max(0, ORDER_INDEX[suivi.statut] ?? 0);
   const progressPercentage = (currentStepIndex / (ETAPES.length - 1)) * 100;
+  const minutesRestantes = estimationTotaleRestante(suivi.statut);
+  const estTermine = suivi.statut === 'livree' || suivi.statut === 'annulee';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+      {idVientDuStockage && (
+        <div className="mb-6 bg-stone-100 border border-stone-200 text-stone-600 text-xs px-4 py-2.5 rounded-lg text-center">
+          Voici votre dernière commande passée sur cet appareil.
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-sm mb-8 text-center">
         <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
           En direct de la cuisine
@@ -133,6 +207,19 @@ function TrackingContent() {
           <Clock className="w-3.5 h-3.5" />
           Passée le {new Date(suivi.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
         </p>
+
+        {!estTermine && minutesRestantes > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 mt-4 bg-stone-900 text-white px-4 py-2.5 rounded-xl"
+          >
+            <Timer className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-semibold">
+              Estimation : encore {minutesRestantes} min environ
+            </span>
+          </motion.div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-sm">
@@ -175,6 +262,8 @@ function TrackingContent() {
             const isCompleted = index < currentStepIndex;
             const isCurrent = index === currentStepIndex;
             const Icon = etape.icon;
+            const minutesEtape = ESTIMATION_MINUTES[etape.key];
+
             return (
               <div key={etape.key} className={`flex items-start gap-4 p-4 rounded-xl transition-all ${
                 isCurrent ? 'bg-amber-50/70 border border-amber-200/50 shadow-sm'
@@ -186,10 +275,17 @@ function TrackingContent() {
                 }`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className={`font-semibold text-sm sm:text-base ${isCurrent ? 'text-stone-900' : 'text-stone-800'}`}>
-                    {etape.titre}
-                  </h3>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className={`font-semibold text-sm sm:text-base ${isCurrent ? 'text-stone-900' : 'text-stone-800'}`}>
+                      {etape.titre}
+                    </h3>
+                    {isCurrent && minutesEtape > 0 && (
+                      <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">
+                        ~{minutesEtape} min
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs sm:text-sm text-stone-500 mt-0.5">{etape.description}</p>
                 </div>
               </div>

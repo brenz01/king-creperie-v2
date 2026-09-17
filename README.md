@@ -4,17 +4,6 @@
 
 🔗 **Démo en ligne :** [king-creperie-v2.vercel.app](https://king-creperie-v2.vercel.app)
 
-<!-- 🎥 VIDÉO DÉMO — à insérer ici -->
-<!--
-Exemple pour une vidéo hébergée (YouTube, Loom, etc.) :
-
-[![Démo King Crêperie V2](https://VOTRE-THUMBNAIL.png)](https://VOTRE-LIEN-VIDEO)
-
-Ou si le fichier vidéo est dans le repo (ex: /docs/demo.mp4), GitHub ne le lit pas
-en inline — héberge-le plutôt sur YouTube/Loom/Streamable et mets le lien ci-dessus,
-ou utilise un GIF court converti depuis la vidéo pour un aperçu direct dans le README.
--->
-
 ---
 
 ## ✨ Aperçu
@@ -23,32 +12,17 @@ King Crêperie V2 n'est pas qu'un site vitrine : c'est une application complète
 
 ### Le menu et la personnalisation
 
-<!-- 📸 CAPTURE — Page d'accueil (Hero) -->
-<!-- 📸 CAPTURE — Grille du menu avec catégories -->
-<!-- 📸 CAPTURE — Modale de personnalisation des extras -->
-
 Chaque produit peut être personnalisé avec des extras (Nutella, banane fraîche, chantilly, etc.), dont le prix est **recalculé et validé côté serveur** à chaque étape — jamais fait confiance à ce qu'envoie le navigateur.
 
 ### Le panier et la commande
-
-<!-- 📸 CAPTURE — Mini panier déroulant -->
-<!-- 📸 CAPTURE — Tunnel de commande (zone de livraison en premier) -->
-<!-- 📸 CAPTURE — Confirmation / redirection WhatsApp -->
 
 Le tunnel de commande demande d'abord la zone de livraison, pour que le client voie le total réel (produits + frais de livraison) avant même de renseigner ses coordonnées — pensé pour réduire la friction et l'abandon de panier.
 
 ### Le suivi en temps réel
 
-<!-- 📸 CAPTURE — Page de suivi avec stepper de progression -->
-<!-- 📸 CAPTURE — Estimation de temps affichée -->
-
 Suivi live du statut de la commande (reçue → en préparation → en livraison → livrée), avec estimation de temps restant, confettis et vibration à l'étape de livraison, et diffusion en temps réel via WebSocket — sans jamais exposer les données personnelles du client sur le canal public.
 
 ### Le tableau de bord administrateur
-
-<!-- 📸 CAPTURE — Dashboard, onglet Commandes -->
-<!-- 📸 CAPTURE — Dashboard, onglet Produits & Stock -->
-<!-- 📸 CAPTURE — Dashboard, onglet Historique / Audit -->
 
 Interface staff avec gestion des commandes en direct, gestion du stock produit par produit, et un historique d'audit qui trace chaque changement de statut (qui, quand, ancien → nouveau statut) — non modifiable a posteriori.
 
@@ -122,6 +96,62 @@ pnpm dev
 ## 📄 Licence
 
 Projet personnel — tous droits réservés. Code partagé à titre de démonstration technique.
+
+---
+
+## 🎥 Démo vidéo
+
+https://github.com/user-attachments/assets/COLLE-ICI-LID-APRES-UPLOAD
+
+*Parcours complet : navigation dans le menu, personnalisation d'une crêpe, ajout au panier, tunnel de commande, et suivi en temps réel côté client.*
+
+---
+
+## 📸 Captures d'écran
+
+### Accueil & menu
+
+<img src="/screenshots/01-accueil-hero.png" width="800" alt="Page d'accueil">
+
+Page d'accueil avec accroche et mise en avant de l'identité de la crêperie (localisation, promesse produit), avant l'entrée dans le menu.
+
+<img src="/screenshots/02-menu-categories.png" width="800" alt="Menu avec catégories et panier flottant">
+
+Grille de menu filtrable par catégorie (Toute la carte, Salées, Sucrées, Boissons, Formules), avec mini panier flottant qui affiche le total en direct sans quitter la page — évite l'aller-retour vers une page panier séparée.
+
+<img src="/screenshots/03-modale-extras.png" width="500" alt="Personnalisation des extras">
+
+Modale de personnalisation : sélection d'extras (Nutella, banane fraîche, chantilly maison, Bueno/Kinder, éclats de spéculoos, double fromage), chacun avec son propre supplément de prix. Le total affiché sur le bouton "Ajouter au panier" se met à jour en direct à chaque sélection, mais reste **recalculé côté serveur** avant enregistrement final.
+
+### Panier & tunnel de commande
+
+<img src="/screenshots/04-checkout-zones.png" width="800" alt="Tunnel de commande — sélection de la zone de livraison">
+
+Étape 1 du tunnel : sélection de la zone de livraison (Zone 1 Almadies/Ngor/Ouakam, Zone 2 Mermoz/Fann/Point E/Liberté 6, Zone 3 Plateau/Yoff/Maristes/VDN), chacune avec ses frais associés affichés directement dans le menu déroulant — le client connaît le coût exact avant de renseigner ses coordonnées.
+
+<img src="/screenshots/05-checkout-whatsapp.png" width="800" alt="Récapitulatif final et envoi via WhatsApp">
+
+Récapitulatif final avec sous-total, frais de livraison et total général, formulaire de coordonnées (nom, téléphone, adresse précise, créneau souhaité), et envoi de la commande formatée directement via WhatsApp — canal déjà maîtrisé par la clientèle locale, sans friction d'inscription.
+
+### Suivi en temps réel
+
+<img src="/screenshots/06-suivi-commande.png" width="800" alt="Suivi de commande en temps réel avec estimation">
+
+Page de suivi accessible via lien unique (UUID de commande) : statut en direct (reçue → en préparation → en livraison → livrée) sous forme de stepper visuel, avec estimation de temps restant recalculée par le staff. Aucune donnée personnelle du client n'est exposée sur cette page publique — seul le statut est diffusé.
+
+### Tableau de bord administrateur
+
+<img src="/screenshots/07-dashboard-commandes.png" width="800" alt="Dashboard — gestion des commandes en direct">
+
+Vue "Commandes" : liste des commandes en cours avec détail des articles, coordonnées client, zone de livraison et total, plus un sélecteur de statut permettant au staff de faire progresser chaque commande en un clic.
+
+<img src="/screenshots/08-dashboard-stock.png" width="800" alt="Dashboard — gestion produits et stock">
+
+Vue "Produits & Stock" : activation/désactivation de la disponibilité produit par produit, et gestion de stock optionnelle (compteur décrémenté automatiquement à chaque commande, alerte visuelle en cas de stock bas ou épuisé).
+
+<img src="/screenshots/09-dashboard-historique.png" width="800" alt="Dashboard — historique d'audit">
+
+Vue "Historique" : journal d'audit infalsifiable de chaque changement de statut, avec l'identité du membre du staff à l'origine du changement, l'ancien et le nouveau statut, et l'horodatage précis — traçabilité complète sans possibilité de modification a posteriori.
 
 ---
 

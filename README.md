@@ -1,6 +1,6 @@
 # 👑 King Crêperie V2
 
-**Application web de commande en ligne et de suivi de commande en temps réel** pour une crêperie basée à Dakar, Sénégal (Les Almadies).
+**Application web de commande en ligne et de suivi de commande en temps réel** pour une crêperie basée à Dakar, Sénégal.
 
 🔗 **Démo en ligne :** [king-creperie-v2.vercel.app](https://king-creperie-v2.vercel.app)
 

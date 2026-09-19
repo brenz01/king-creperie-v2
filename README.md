@@ -101,7 +101,17 @@ Projet personnel — tous droits réservés. Code partagé à titre de démonstr
 
 ## 🎥 Démo vidéo
 
-https://github.com/user-attachments/assets/COLLE-ICI-LID-APRES-UPLOAD
+## 🎥 Démo vidéo
+
+<p align="center">
+  <a href="https://youtu.be/ojgIWsCvSdg">
+    <img src="https://img.youtube.com/vi/ojgIWsCvSdg/maxresdefault.jpg" alt="Démo King Crêperie V2" width="720">
+  </a>
+  <br>
+  <em>▶ Voir la démo complète sur YouTube</em>
+</p>
+
+*Parcours complet : navigation dans le menu, personnalisation d'une crêpe, ajout au panier, tunnel de commande, et suivi en temps réel côté client.*
 
 *Parcours complet : navigation dans le menu, personnalisation d'une crêpe, ajout au panier, tunnel de commande, et suivi en temps réel côté client.*
 

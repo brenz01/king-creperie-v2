@@ -2,7 +2,7 @@
 
 **Application web de commande en ligne et de suivi de commande en temps réel** pour une crêperie basée à Dakar, Sénégal.
 
-🔗 **Démo en ligne :** [king-creperie-v2.vercel.app](https://king-creperie-v2.vercel.app)
+🔗 **Démo en ligne :** [king-creperie-v2.vercel.app](https://king-creperie-v2.vercel.app) · 🎬 **[Démo vidéo](https://youtu.be/ojgIWsCvSdg)**
 
 ---
 

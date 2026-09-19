@@ -111,45 +111,56 @@ https://github.com/user-attachments/assets/COLLE-ICI-LID-APRES-UPLOAD
 
 ### Accueil & menu
 
-<img src="/screenshots/01-accueil-hero.png" width="800" alt="Page d'accueil">
+<img width="956" height="561" alt="Capture d&#39;écran 2026-09-17 010935" src="https://github.com/user-attachments/assets/eb28f082-4b12-4910-b0da-235c52a7be5c" />
+
 
 Page d'accueil avec accroche et mise en avant de l'identité de la crêperie (localisation, promesse produit), avant l'entrée dans le menu.
 
-<img src="/screenshots/02-menu-categories.png" width="800" alt="Menu avec catégories et panier flottant">
+<img width="959" height="563" alt="Capture d&#39;écran 2026-09-17 011014" src="https://github.com/user-attachments/assets/66b2eadc-bf08-467b-ba46-818b52641dfa" />
+
 
 Grille de menu filtrable par catégorie (Toute la carte, Salées, Sucrées, Boissons, Formules), avec mini panier flottant qui affiche le total en direct sans quitter la page — évite l'aller-retour vers une page panier séparée.
 
-<img src="/screenshots/03-modale-extras.png" width="500" alt="Personnalisation des extras">
+<img width="949" height="530" alt="Capture d&#39;écran 2026-09-17 010948" src="https://github.com/user-attachments/assets/8c3cb77e-54e5-4815-a4a2-07e1327aa400" />
+
 
 Modale de personnalisation : sélection d'extras (Nutella, banane fraîche, chantilly maison, Bueno/Kinder, éclats de spéculoos, double fromage), chacun avec son propre supplément de prix. Le total affiché sur le bouton "Ajouter au panier" se met à jour en direct à chaque sélection, mais reste **recalculé côté serveur** avant enregistrement final.
 
 ### Panier & tunnel de commande
 
-<img src="/screenshots/04-checkout-zones.png" width="800" alt="Tunnel de commande — sélection de la zone de livraison">
+<img width="959" height="556" alt="Capture d&#39;écran 2026-09-17 011029" src="https://github.com/user-attachments/assets/28d95dfd-3985-4151-bfcc-4829b9c77e26" />
+
+<img width="536" height="277" alt="Capture d&#39;écran 2026-09-17 011037" src="https://github.com/user-attachments/assets/824a185b-34a9-4651-b766-c27b7f567945" />
+
 
 Étape 1 du tunnel : sélection de la zone de livraison (Zone 1 Almadies/Ngor/Ouakam, Zone 2 Mermoz/Fann/Point E/Liberté 6, Zone 3 Plateau/Yoff/Maristes/VDN), chacune avec ses frais associés affichés directement dans le menu déroulant — le client connaît le coût exact avant de renseigner ses coordonnées.
 
-<img src="/screenshots/05-checkout-whatsapp.png" width="800" alt="Récapitulatif final et envoi via WhatsApp">
+<img width="959" height="552" alt="Capture d&#39;écran 2026-09-17 011057" src="https://github.com/user-attachments/assets/d63ca58d-00f1-40b2-b7b8-e56fb4ce32f8" />
+
 
 Récapitulatif final avec sous-total, frais de livraison et total général, formulaire de coordonnées (nom, téléphone, adresse précise, créneau souhaité), et envoi de la commande formatée directement via WhatsApp — canal déjà maîtrisé par la clientèle locale, sans friction d'inscription.
 
 ### Suivi en temps réel
 
-<img src="/screenshots/06-suivi-commande.png" width="800" alt="Suivi de commande en temps réel avec estimation">
+<img width="958" height="559" alt="Capture d&#39;écran 2026-09-17 011134" src="https://github.com/user-attachments/assets/5da63ba7-f068-4bff-a099-6f58aaefdb1d" />
+
 
 Page de suivi accessible via lien unique (UUID de commande) : statut en direct (reçue → en préparation → en livraison → livrée) sous forme de stepper visuel, avec estimation de temps restant recalculée par le staff. Aucune donnée personnelle du client n'est exposée sur cette page publique — seul le statut est diffusé.
 
 ### Tableau de bord administrateur
 
-<img src="/screenshots/07-dashboard-commandes.png" width="800" alt="Dashboard — gestion des commandes en direct">
+<img width="959" height="565" alt="Capture d&#39;écran 2026-09-17 011152" src="https://github.com/user-attachments/assets/f8d036a1-8a98-47c1-a57e-00f70617db6c" />
+
 
 Vue "Commandes" : liste des commandes en cours avec détail des articles, coordonnées client, zone de livraison et total, plus un sélecteur de statut permettant au staff de faire progresser chaque commande en un clic.
 
-<img src="/screenshots/08-dashboard-stock.png" width="800" alt="Dashboard — gestion produits et stock">
+<img width="959" height="555" alt="Capture d&#39;écran 2026-09-17 011204" src="https://github.com/user-attachments/assets/fedd64c2-172e-4168-ab69-e170904942ec" />
+
 
 Vue "Produits & Stock" : activation/désactivation de la disponibilité produit par produit, et gestion de stock optionnelle (compteur décrémenté automatiquement à chaque commande, alerte visuelle en cas de stock bas ou épuisé).
 
-<img src="/screenshots/09-dashboard-historique.png" width="800" alt="Dashboard — historique d'audit">
+<img width="959" height="548" alt="Capture d&#39;écran 2026-09-17 011213" src="https://github.com/user-attachments/assets/8ca85c36-2e6d-4b44-b85a-b9abcf6eb0e2" />
+
 
 Vue "Historique" : journal d'audit infalsifiable de chaque changement de statut, avec l'identité du membre du staff à l'origine du changement, l'ancien et le nouveau statut, et l'horodatage précis — traçabilité complète sans possibilité de modification a posteriori.
 

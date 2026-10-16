@@ -147,7 +147,9 @@
     translateY(calc(var(--ad) * var(--ad) * 26px))
     rotate(calc(var(--d) * 9deg))
     scale(calc(1 - min(var(--ad), 1.4) * 0.24));
-  opacity: calc(1 - min(var(--ad), 1.6) * 0.32);
+  /* Au-delà de 1,6 la crêpe s'efface et a disparu vers 2,6 : elle quitte
+     la plaque avant de sortir de la zone visible du rail. */
+  opacity: calc(1 - min(var(--ad), 1.6) * 0.32 - max(0, var(--ad) - 1.6) * 0.5);
   transform-origin: 50% 120%;
 }
 .plaque-tour .photo-tourne { transform: rotate(calc(var(--d) * -28deg)); }

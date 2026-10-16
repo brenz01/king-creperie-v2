@@ -470,7 +470,14 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
           {cart.map((item) => {
             const cle = cleLigne(item.produit);
             const extras = item.produit.extrasChoisis ?? [];
-            const nomBase = extras.length > 0 ? item.produit.nom.replace(/\s*\(.*\)$/, '') : item.produit.nom;
+            // Le nom stocké vaut « <nom> (<extra>, <extra>) » (ProductModal,
+            // reconcilierPanier). On retire ce suffixe exact, jamais une
+            // parenthèse du nom lui-même (« … (Béchamel) »).
+            const suffixe = extras.length > 0 ? ` (${extras.map((x) => x.nom).join(', ')})` : '';
+            const nomBase =
+              suffixe && item.produit.nom.endsWith(suffixe)
+                ? item.produit.nom.slice(0, -suffixe.length)
+                : item.produit.nom;
             return (
               <li key={cle} className="py-4 flex gap-3 items-start">
                 <div className="flex-1 min-w-0">

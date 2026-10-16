@@ -34,7 +34,8 @@ export default function HeroSection() {
           <ul className="mt-5 space-y-2 text-[0.95rem] text-kc-lait">
             <li className="flex items-center gap-2.5">
               <Bike className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />
-              Livrées de Ngor au Plateau, de 1 000 à 2 000 F selon le quartier
+              {/* Espaces fines insécables dans les nombres, insécable avant F : jamais « 2 / 000 F ». */}
+              Livrées de Ngor au Plateau, de 1&#8239;000 à 2&#8239;000&nbsp;F selon le quartier
             </li>
             <li className="flex items-center gap-2.5">
               <Banknote className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />

@@ -10,15 +10,22 @@
   --font-serif: var(--font-bagel), 'Arial Rounded MT Bold', sans-serif;
   --font-display: var(--font-bagel), 'Arial Rounded MT Bold', sans-serif;
 
-  --color-kc-indigo: #1f2a5c;
-  --color-kc-nuit: #161e45;
-  --color-kc-encre: #282743;
-  --color-kc-beurre: #f7e6a7;
-  --color-kc-bissap: #be2d52;
+  /* Palette de référence (cahier des charges « La plaque vivante »). */
+  --color-kc-indigo: #1e2a5c;      /* identité, fonds forts */
+  --color-kc-nuit: #151c40;        /* la plaque, surfaces profondes */
+  --color-kc-encre: #282743;       /* texte sur fond clair */
+  --color-kc-beurre: #f7e6a7;      /* titres et sélection sur indigo */
+  --color-kc-bissap: #be2d52;      /* action principale */
   --color-kc-bissap-fonce: #9c2142;
-  --color-kc-caramel: #f2a93b;
-  --color-kc-lait: #fff8e8;
-  --color-kc-brume: #e4e5ef;
+  --color-kc-caramel: #f2a93b;     /* prix sur fond sombre */
+  --color-kc-lait: #fff8e8;        /* surfaces calmes : fiche, commande */
+  --color-kc-brume: #cfd2e6;       /* texte secondaire sur indigo (≥ 7:1) */
+  --color-kc-ligne: rgb(40 39 67 / 0.12);
+  --color-kc-ok: #2f7d4f;          /* sémantique : ouvert, livré */
+
+  /* Grammaire du mouvement : trois durées, deux courbes. */
+  --ease-sortie: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-ressort: cubic-bezier(0.3, 1.45, 0.5, 1);
 }
 
 @layer base {
@@ -70,45 +77,6 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-/* ------------------------------------------------------------------
-   La plaque : en faisant défiler une rangée, la crêpe au centre se
-   redresse et grossit, ses voisines tournent comme sur le billig.
-   Animation liée au défilement (aucun JS), uniquement si le navigateur
-   la supporte et si l'utilisateur n'a pas demandé moins de mouvement.
-   ------------------------------------------------------------------ */
-@keyframes plaque-item {
-  0%   { transform: scale(0.84); opacity: 0.8; }
-  50%  { transform: scale(1);    opacity: 1; }
-  100% { transform: scale(0.84); opacity: 0.8; }
-}
-@keyframes plaque-photo {
-  0%   { transform: rotate(-16deg); }
-  50%  { transform: rotate(0deg); }
-  100% { transform: rotate(16deg); }
-}
-
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .plaque-item {
-      animation: plaque-item linear both;
-      animation-timeline: view(inline);
-    }
-    .plaque-photo {
-      animation: plaque-photo linear both;
-      animation-timeline: view(inline);
-    }
-    /* Sur grand écran la rangée s'aligne à gauche : pas de zoom central,
-       seule la rotation des crêpes accompagne le défilement. */
-    @media (min-width: 640px) {
-      .plaque-item { animation: none; }
-    }
-    /* Sur ordinateur la carte est une grille : plus de rotation. */
-    @media (min-width: 1024px) {
-      .plaque-photo { animation: none; }
-    }
-  }
-}
-
 /* Ajout au panier : la crêpe « saute » sur la plaque, avec un halo
    caramel, le temps d'un battement. */
 @keyframes plaque-pop {
@@ -137,3 +105,53 @@
 .bg-brand-accent { background-color: var(--accent); }
 .bg-brand-accent:hover { background-color: var(--accent-hover); }
 .border-brand { border-color: var(--border-color); }
+
+/* ------------------------------------------------------------------
+   Grammaire du mouvement
+   Niveau 1 (structure) : panneaux, changements d'écran, 280-480 ms.
+   Niveau 2 (interaction) : retour immédiat, 120-200 ms.
+   Niveau 3 (signature) : plaque, ajout au panier, accueil.
+   ------------------------------------------------------------------ */
+@keyframes kc-apparait {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes kc-fondu { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kc-surligne {
+  0%   { box-shadow: 0 0 0 0 rgb(242 169 59 / 0.55); }
+  100% { box-shadow: 0 0 0 14px rgb(242 169 59 / 0); }
+}
+/* Anneau de suivi : l'arc de l'étape en cours se trace (stroke-dashoffset
+   part de --long, la longueur de l'arc). */
+@keyframes kc-trace { from { stroke-dashoffset: var(--long); } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .kc-trace { animation: kc-trace 900ms var(--ease-sortie) both; }
+  .kc-apparait { animation: kc-apparait 320ms var(--ease-sortie) both; }
+  .kc-fondu { animation: kc-fondu 240ms ease-out both; }
+  .kc-surligne { animation: kc-surligne 900ms ease-out 2; }
+}
+
+/* Pression : tout ce qui se touche répond tout de suite. */
+@utility appui {
+  transition: transform 140ms var(--ease-sortie), background-color 160ms, color 160ms, border-color 160ms;
+  &:active { transform: scale(0.96); }
+}
+
+/* La plaque tournante : chaque crêpe reçoit --d (distance au centre,
+   en largeurs d'élément, signée) et --ad (sa valeur absolue) depuis le
+   défilement natif. Arc + inclinaison + échelle : la rangée devient le
+   bord d'une plaque qui tourne. */
+.plaque-tour > li {
+  --d: 0; --ad: 0;
+  transform:
+    translateY(calc(var(--ad) * var(--ad) * 26px))
+    rotate(calc(var(--d) * 9deg))
+    scale(calc(1 - min(var(--ad), 1.4) * 0.24));
+  opacity: calc(1 - min(var(--ad), 1.6) * 0.32);
+  transform-origin: 50% 120%;
+}
+.plaque-tour .photo-tourne { transform: rotate(calc(var(--d) * -28deg)); }
+@media (prefers-reduced-motion: reduce) {
+  .plaque-tour > li { transform: scale(calc(1 - min(var(--ad), 1.4) * 0.18)); }
+  .plaque-tour .photo-tourne { transform: none; }
+}

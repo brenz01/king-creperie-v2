@@ -15,20 +15,28 @@ test('commande de bout en bout', async ({ page, context }) => {
   page.on('pageerror', (e) => erreurs.push(e.message));
 
   await page.goto('/');
-  await expect(page.locator('#carte-salee')).toContainText('7 recettes');
-  await expect(page.locator('#carte-boisson')).toContainText('6 boissons');
+  const carte = page.locator('#carte');
+  await expect(carte.getByRole('button', { name: 'Salées 7' })).toBeVisible();
+  await expect(carte.getByRole('button', { name: 'Boissons 6' })).toBeVisible();
 
-  // « Tout voir » : la rubrique passe en grille, puis revient en rangée.
-  await page.locator('#carte-sucree').getByRole('button', { name: 'Tout voir' }).click();
-  await expect(page.locator('#carte-sucree ul.grid li')).toHaveCount(7);
-  await page.locator('#carte-sucree').getByRole('button', { name: 'Afficher en rangée' }).click();
+  // La plaque : la recette au centre est décrite sous la plaque.
+  await expect(carte.getByText('1 sur 7')).toBeVisible();
+  await carte.getByRole('button', { name: 'Recette suivante' }).click();
+  await expect(carte.getByText('2 sur 7')).toBeVisible();
+
+  // Vue liste : toute la rubrique d'un coup, puis retour à la plaque.
+  await carte.getByRole('button', { name: 'Liste' }).click();
+  await expect(page.locator('#liste-sucree li')).toHaveCount(7);
+  await carte.getByRole('button', { name: 'Plaque' }).click();
 
   // Boisson : ajout direct, confirmé dans la barre panier.
-  await page.locator('#carte-boisson li button').first().click();
+  await carte.getByRole('button', { name: 'Boissons 6' }).click();
+  await carte.getByRole('button', { name: 'Ajouter au panier' }).click();
   await expect(page.getByRole('button', { name: /Voir mon panier/ })).toContainText('Ajouté au panier, 1 article');
 
   // Crêpe : fiche, extras facultatifs, aucun présélectionné.
-  await page.locator('#carte-salee li button').first().click();
+  await carte.getByRole('button', { name: 'Salées 7' }).click();
+  await carte.getByRole('button', { name: 'Composer cette crêpe' }).click();
   const fiche = page.getByRole('dialog');
   await expect(fiche).toContainText('Extras (facultatif)');
   await expect(fiche.locator('[aria-pressed="true"]')).toHaveCount(0);
@@ -64,12 +72,32 @@ test('commande de bout en bout', async ({ page, context }) => {
   await page.getByRole('dialog', { name: 'Votre commande' }).getByRole('button', { name: 'Passer à la livraison' }).click();
   await expect(page.locator('#nom')).toHaveValue('Awa Ndiaye');
 
-  // Téléphone invalide refusé par le serveur, puis commande acceptée.
-  await panneau.getByRole('button', { name: 'Valider ma commande' }).click();
+  // Téléphone invalide refusé avant l'envoi, aucune commande créée.
+  await panneau.getByRole('button', { name: 'Vérifier ma commande' }).click();
   await expect(panneau.getByRole('alert')).toContainText('téléphone');
+  expect((await journal()).rpcLog).toHaveLength(0);
   await page.fill('#tel', '77 123 45 67');
-  await panneau.getByRole('button', { name: 'Valider ma commande' }).click();
+  await panneau.getByRole('button', { name: 'Vérifier ma commande' }).click();
+
+  // Récapitulatif : modifier puis revenir, les données restent.
+  await expect(panneau.getByRole('heading', { name: 'On vérifie ?' })).toBeVisible();
+  await expect(panneau).toContainText('Awa Ndiaye');
+  await expect(panneau).toContainText('Mermoz, Villa 12, rue MZ-40');
+  await expect(panneau).toContainText(/Total à payer\s*4\s500 F/);
+  await panneau.getByRole('button', { name: 'Modifier' }).nth(1).click();
+  await expect(page.locator('#adresse')).toHaveValue('Villa 12, rue MZ-40');
+  await panneau.getByRole('button', { name: 'Vérifier ma commande' }).click();
+  expect((await journal()).rpcLog).toHaveLength(0);
+  await panneau.getByRole('button', { name: 'Envoyer ma commande' }).click();
   await expect(panneau.getByText('Dernière étape')).toBeVisible();
+  // Pas de « confirmée » tant que la crêperie n'a pas répondu.
+  await expect(panneau).toContainText('en attente de confirmation');
+  await expect(panneau).not.toContainText(/commande confirmée/i);
+
+  // Secours si WhatsApp ne s'ouvre pas : message lisible et numéro.
+  await panneau.getByRole('button', { name: 'WhatsApp ne s’ouvre pas ?' }).click();
+  await expect(panneau.locator('#message-wa')).toHaveValue(/je souhaite confirmer ma commande/);
+  await expect(panneau.getByRole('button', { name: 'Copier le message' })).toBeVisible();
 
   const wa = panneau.getByRole('link', { name: 'Envoyer sur WhatsApp pour confirmer' });
   const href = decodeURIComponent((await wa.getAttribute('href')) ?? '');
@@ -102,6 +130,36 @@ test('commande de bout en bout', async ({ page, context }) => {
   expect(erreurs).toEqual([]);
 });
 
+test('panier : quantités, retrait, panier vide', async ({ page }) => {
+  await page.goto('/');
+  const carte = page.locator('#carte');
+  await carte.getByRole('button', { name: 'Boissons 6' }).click();
+  await carte.getByRole('button', { name: 'Ajouter au panier' }).click();
+  await page.getByRole('button', { name: /Voir mon panier/ }).click();
+  const panneau = page.getByRole('dialog', { name: 'Votre commande' });
+  const ligne = panneau.locator('ul > li').first();
+  const nom = (await ligne.locator('p').first().textContent())?.trim() ?? '';
+
+  await panneau.getByRole('button', { name: `Une ${nom} de plus` }).click();
+  await expect(ligne.locator('output')).toHaveText('2');
+  await panneau.getByRole('button', { name: `Une ${nom} de moins` }).click();
+  await expect(ligne.locator('output')).toHaveText('1');
+  await panneau.getByRole('button', { name: `Retirer ${nom}` }).click();
+  await expect(panneau.getByText('La plaque est vide')).toBeVisible();
+  await panneau.getByRole('button', { name: 'Voir la carte' }).click();
+  await expect(panneau).toHaveCount(0);
+});
+
+test('recherche : trouve sans accents ni majuscules', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('#recherche-carte', 'NUTELLA');
+  await expect(page.getByText('3 résultats pour « NUTELLA »')).toBeVisible();
+  await page.fill('#recherche-carte', 'bechamel');
+  await expect(page.locator('#carte')).toContainText('Crêpe Poulet Béchamel');
+  await page.fill('#recherche-carte', 'zzz');
+  await expect(page.locator('#carte')).toContainText('Aucune recette ne correspond à « zzz »');
+});
+
 test('lien partagé : ouvre directement la fiche', async ({ page }) => {
   await page.goto('/?produit=00000000-0000-4000-8000-000000000009#carte');
   await expect(page.getByRole('dialog')).toContainText('Crêpe Beurre Sucre');
@@ -109,7 +167,7 @@ test('lien partagé : ouvre directement la fiche', async ({ page }) => {
 
 test('pages de secours', async ({ page }) => {
   await page.goto('/commande');
-  await expect(page.locator('body')).toContainText('Votre panier est vide');
+  await expect(page.locator('body')).toContainText('La plaque est vide');
   await page.goto('/suivi?id=11111111-1111-4111-8111-111111111111');
   await expect(page.locator('body')).toContainText('Vérifiez le lien reçu sur WhatsApp');
   await page.goto('/une-page-qui-nexiste-pas');

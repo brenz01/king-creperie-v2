@@ -12,7 +12,7 @@ import './globals.css';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
   || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000');
 
-const TITRE = 'King Crêperie 👑 | Les meilleures crêpes de Dakar';
+const TITRE = 'King Crêperie : crêpes livrées à Dakar';
 const DESCRIPTION = 'Crêperie gourmande aux Almadies. Commandez en ligne, livraison à domicile à Dakar et suivi en direct.';
 
 export const metadata: Metadata = {

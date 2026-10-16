@@ -1,38 +1,47 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { CircleDot, List, Search, X } from 'lucide-react';
 import type { CategorieProduit, Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
 import { chargerExtras, chargerProduits } from '@/lib/catalogue';
 import { useCart } from '@/context/CartContext';
-import PlaqueRail from './carte/PlaqueRail';
-import { estEpuise } from './carte/PlaqueItem';
+import { estEpuise } from '@/lib/produit';
+import { confirmerAjout } from '@/lib/toast';
+import PlaqueTournante from './carte/PlaqueTournante';
+import ListeCarte, { type Rubrique } from './carte/ListeCarte';
 import ProductModal from './ProductModal';
 import { AvisFermeture } from './StatutBoutique';
-import { Loader2 } from 'lucide-react';
 
-const RUBRIQUES: Array<{ categorie: CategorieProduit; titre: string; court: string; unite: string }> = [
-  { categorie: 'salee', titre: 'Crêpes salées', court: 'Salées', unite: 'recettes' },
-  { categorie: 'sucree', titre: 'Crêpes sucrées', court: 'Sucrées', unite: 'recettes' },
-  { categorie: 'boisson', titre: 'Boissons et jus maison', court: 'Boissons', unite: 'boissons' },
+const RUBRIQUES: Rubrique[] = [
+  { categorie: 'salee', titre: 'Crêpes salées', court: 'Salées' },
+  { categorie: 'sucree', titre: 'Crêpes sucrées', court: 'Sucrées' },
+  { categorie: 'boisson', titre: 'Boissons', court: 'Boissons' },
 ];
+
+type Vue = 'plaque' | 'liste';
 
 interface MenuSectionProps {
   produitsInitiaux: Produit[] | null;
   extrasInitiaux: Extra[];
 }
 
-// Les produits disponibles d'abord, les épuisés en fin de rangée.
+// Les produits disponibles d'abord, les épuisés en fin de plaque.
 function trier(produits: Produit[]): Produit[] {
   return [...produits].sort((a, b) => Number(estEpuise(a)) - Number(estEpuise(b)) || a.prix - b.prix);
 }
+
+// Recherche tolérante : sans accents ni majuscules (« creme » trouve « crème »).
+const normaliser = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSectionProps) {
   const [produits, setProduits] = useState<Produit[] | null>(produitsInitiaux);
   const [extras, setExtras] = useState<Extra[]>(extrasInitiaux);
   const [selection, setSelection] = useState<Produit | null>(null);
   const [erreur, setErreur] = useState(false);
-  const [active, setActive] = useState<CategorieProduit>('salee');
+  const [categorie, setCategorie] = useState<CategorieProduit>('salee');
+  const [vue, setVue] = useState<Vue>('plaque');
+  const [recherche, setRecherche] = useState('');
   const { synchroniser, addToCart } = useCart();
 
   useEffect(() => {
@@ -62,79 +71,173 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     [produits],
   );
 
-  // Onglet actif = rangée la plus visible à l'écran.
-  useEffect(() => {
-    const sections = rubriques
-      .map((r) => document.getElementById(`carte-${r.categorie}`))
-      .filter((el): el is HTMLElement => !!el);
-    if (sections.length === 0) return;
-    const obs = new IntersectionObserver(
-      (entrees) => {
-        const visible = entrees.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActive(visible.target.id.replace('carte-', '') as CategorieProduit);
-      },
-      { rootMargin: '-35% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] },
-    );
-    sections.forEach((s) => obs.observe(s));
-    return () => obs.disconnect();
-  }, [rubriques]);
+  const terme = normaliser(recherche.trim());
+  const rubriquesFiltrees = useMemo(
+    () =>
+      terme
+        ? rubriques.map((r) => ({
+            ...r,
+            produits: r.produits.filter((p) => normaliser(`${p.nom} ${p.description ?? ''}`).includes(terme)),
+          }))
+        : rubriques,
+    [rubriques, terme],
+  );
+
+  const total = rubriques.reduce((s, r) => s + r.produits.length, 0);
+  const enListe = vue === 'liste' || terme.length > 0;
+  const courante = rubriques.find((r) => r.categorie === categorie) ?? rubriques[0];
+
+  // Ajout direct (boissons) : la photo saute sur la plaque, la barre
+  // panier confirme. Aucun rendu React pour l'effet.
+  const ajouter = (p: Produit, photo: HTMLElement | null) => {
+    addToCart(p);
+    confirmerAjout('Ajouté au panier');
+    if (photo) {
+      photo.classList.remove('plaque-pop');
+      void photo.offsetWidth;
+      photo.classList.add('plaque-pop');
+    }
+  };
+
+  const choisirRubrique = (c: CategorieProduit) => {
+    setCategorie(c);
+    if (enListe) document.getElementById(`liste-${c}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     // Pas de z-index ici : il créerait un contexte d'empilement et la fiche
     // produit (rendue dans la section) passerait sous la barre panier.
-    <section id="carte" className="relative -mt-8 rounded-t-[2.5rem] bg-kc-lait text-kc-encre pt-8 pb-28 scroll-mt-16">
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-4">
-        <h2 className="font-display text-5xl sm:text-6xl leading-none text-kc-indigo">La carte</h2>
-        <p className="mt-3 text-kc-encre/70 text-base max-w-md leading-relaxed">
-          Glissez pour voir les recettes, touchez une crêpe pour la composer.
-        </p>
+    <section
+      id="carte"
+      aria-labelledby="titre-carte"
+      className="relative bg-kc-indigo text-kc-beurre pt-10 pb-28 scroll-mt-16 overflow-x-clip"
+    >
+      <div className="max-w-3xl mx-auto px-5 sm:px-6">
+        <div className="flex items-end justify-between gap-4">
+          <h2 id="titre-carte" className="font-display text-5xl sm:text-6xl leading-[0.95]">
+            La carte
+          </h2>
+          {total > 0 && <p className="pb-1 text-sm text-kc-brume tabular-nums">{total} recettes</p>}
+        </div>
         <AvisFermeture />
+
+        {/* Recherche + choix de la vue */}
+        <div className="mt-6 flex gap-2">
+          <label className="relative flex-1 min-w-0">
+            <span className="sr-only">Chercher une recette</span>
+            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-kc-brume/70" />
+            <input
+              id="recherche-carte"
+              type="search"
+              inputMode="search"
+              autoComplete="off"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Chercher une recette"
+              className="w-full h-12 rounded-full bg-kc-nuit border border-kc-beurre/15 pl-12 pr-11 text-base text-kc-lait placeholder:text-kc-brume/55 focus:outline-none focus:border-kc-caramel"
+            />
+            {recherche && (
+              <button
+                type="button"
+                onClick={() => setRecherche('')}
+                aria-label="Effacer la recherche"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-kc-brume"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </label>
+          <div
+            role="group"
+            aria-label="Affichage de la carte"
+            className="shrink-0 flex rounded-full bg-kc-nuit p-1 border border-kc-beurre/15"
+          >
+            {(
+              [
+                { id: 'plaque', libelle: 'Plaque', Icone: CircleDot },
+                { id: 'liste', libelle: 'Liste', Icone: List },
+              ] as const
+            ).map(({ id, libelle, Icone }) => {
+              const actif = id === 'liste' ? enListe : !enListe;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={actif}
+                  onClick={() => {
+                    setVue(id);
+                    if (id === 'plaque') setRecherche('');
+                  }}
+                  className={`appui h-10 px-3.5 rounded-full flex items-center gap-1.5 text-sm font-semibold ${
+                    actif ? 'bg-kc-beurre text-kc-nuit' : 'text-kc-brume'
+                  }`}
+                >
+                  <Icone className="w-4 h-4" aria-hidden />
+                  <span className="max-[380px]:sr-only">{libelle}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Rubriques */}
+        {rubriques.length > 1 && !terme && (
+          <div role="group" aria-label="Rubriques" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-kc-nuit p-1">
+            {rubriques.map((r) => {
+              const actif = categorie === r.categorie;
+              return (
+                <button
+                  key={r.categorie}
+                  type="button"
+                  aria-pressed={actif}
+                  onClick={() => choisirRubrique(r.categorie)}
+                  className={`appui rounded-xl py-2.5 text-sm font-semibold leading-tight ${
+                    actif ? 'bg-kc-indigo text-kc-beurre shadow-[inset_0_0_0_1.5px_var(--color-kc-beurre)]' : 'text-kc-brume'
+                  }`}
+                >
+                  {r.court}{' '}
+                  <span className={`tabular-nums ${actif ? 'text-kc-caramel' : 'text-kc-brume/60'}`}>{r.produits.length}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {rubriques.length > 1 && (
-        <nav
-          aria-label="Rubriques de la carte"
-          className="sticky top-16 z-30 mt-6 bg-kc-lait/95 backdrop-blur-md border-b border-kc-encre/10"
-        >
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-3 flex gap-2 overflow-x-auto scrollbar-none">
-            {rubriques.map((r) => (
-              <a
-                key={r.categorie}
-                href={`#carte-${r.categorie}`}
-                aria-current={active === r.categorie ? 'true' : undefined}
-                className={`shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-                  active === r.categorie
-                    ? 'bg-kc-indigo text-kc-beurre'
-                    : 'text-kc-indigo border border-kc-indigo/30 hover:border-kc-indigo'
-                }`}
-              >
-                {r.court}
-              </a>
-            ))}
-          </div>
-        </nav>
-      )}
-
       {produits === null ? (
-        <div className="max-w-6xl mx-auto px-5 py-20 text-center text-kc-encre/70">
+        <div className="py-10" aria-live="polite">
           {erreur ? (
-            <p>La carte ne charge pas. Vérifiez votre connexion puis rechargez la page.</p>
+            <p className="max-w-md mx-auto px-5 text-center text-kc-brume">
+              La carte ne s’est pas chargée. Vérifiez votre connexion, puis rechargez la page.
+            </p>
           ) : (
-            <Loader2 className="w-8 h-8 animate-spin mx-auto" aria-label="Chargement de la carte" />
+            <div className="flex justify-center" aria-label="Chargement de la carte">
+              <span className="block w-[min(52vw,14rem)] aspect-square rounded-full bg-kc-nuit animate-pulse" />
+            </div>
           )}
         </div>
+      ) : enListe ? (
+        <div key="liste" className="kc-fondu mt-6 max-w-3xl mx-auto sm:px-6">
+          <div className="bg-kc-lait text-kc-encre rounded-t-[2rem] sm:rounded-[2rem]">
+            <ListeCarte
+              rubriques={rubriquesFiltrees}
+              recherche={recherche.trim()}
+              onComposer={setSelection}
+              onAjouter={ajouter}
+            />
+          </div>
+        </div>
       ) : (
-        rubriques.map((r) => (
-          <PlaqueRail
-            key={r.categorie}
-            id={`carte-${r.categorie}`}
-            titre={r.titre}
-            unite={r.unite}
-            produits={r.produits}
-            onChoisir={setSelection}
-            onAjouterDirect={(p) => addToCart(p)}
-          />
-        ))
+        courante && (
+          <div key={courante.categorie} className="kc-fondu mt-2">
+            <PlaqueTournante
+              produits={courante.produits}
+              libelle={courante.titre}
+              onComposer={setSelection}
+              onAjouter={ajouter}
+            />
+          </div>
+        )
       )}
 
       {selection && <ProductModal produit={selection} extras={extras} onClose={() => setSelection(null)} />}

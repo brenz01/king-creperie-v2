@@ -59,3 +59,15 @@ test('boutique : pause des commandes et horaires', async ({ page }) => {
   await expect(page.getByText('Horaires enregistrés. Le site est à jour.')).toBeVisible();
   await expect(page.getByText(/Dim\. fermé/)).toBeVisible();
 });
+
+test('son des nouvelles commandes : coupé par défaut, mémorisé sur l’appareil', async ({ page }) => {
+  const activer = page.getByRole('button', { name: 'Activer le son des nouvelles commandes' });
+  await expect(activer).toHaveAttribute('aria-pressed', 'false');
+  await activer.click();
+  await expect(page.getByRole('button', { name: 'Couper le son des nouvelles commandes' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Couper le son des nouvelles commandes' })).toBeVisible();
+});

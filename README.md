@@ -119,6 +119,26 @@ pnpm dev
 
 ---
 
+## 🧪 Tests
+
+Exécutés automatiquement par la CI sur chaque PR, contre un **faux Supabase** en mémoire (`e2e/mock-supabase.mjs`) : aucune donnée réelle n'est touchée.
+
+| Fichier | Ce qui est vérifié |
+|---|---|
+| `e2e/horaires.unit.spec.ts` | calcul ouvert / fermé (plages après minuit, jours fermés, pause du gérant) |
+| `e2e/commande.e2e.spec.ts` | parcours client complet : carte, fiche, panier, livraison, WhatsApp, total serveur, suivi |
+| `e2e/boutique.e2e.spec.ts` | boutique fermée ou en pause : affichage, panier bloqué, refus côté serveur |
+| `e2e/staff.e2e.spec.ts` | KC Staff : étapes de commande, annulation confirmée, carte, pause et horaires |
+
+```bash
+pnpm exec playwright install chromium   # une seule fois
+pnpm test:e2e                           # build de test + tests
+```
+
+> `pnpm test:e2e` refait un build pointant vers le faux Supabase : relancez `pnpm build` avant un `pnpm start` réel.
+
+---
+
 ## 📄 Licence
 
 Projet personnel — tous droits réservés. Code partagé à titre de démonstration technique.

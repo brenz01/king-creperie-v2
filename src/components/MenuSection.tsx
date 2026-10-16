@@ -1,32 +1,39 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Produit } from '@/types';
+import type { CategorieProduit, Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
 import { chargerExtras, chargerProduits } from '@/lib/catalogue';
-import ProductCard from './ProductCard';
-import CategoryTabs, { CATEGORIES } from './CategoryTabs';
+import { useCart } from '@/context/CartContext';
+import PlaqueRail from './carte/PlaqueRail';
+import { estEpuise } from './carte/PlaqueItem';
 import ProductModal from './ProductModal';
 import { Loader2 } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+
+const RUBRIQUES: Array<{ categorie: CategorieProduit; titre: string; court: string; unite: string }> = [
+  { categorie: 'salee', titre: 'Crêpes salées', court: 'Salées', unite: 'recettes' },
+  { categorie: 'sucree', titre: 'Crêpes sucrées', court: 'Sucrées', unite: 'recettes' },
+  { categorie: 'boisson', titre: 'Boissons', court: 'Boissons', unite: 'boissons' },
+];
 
 interface MenuSectionProps {
-  // Rendu serveur (SEO + affichage immédiat). null = échec du fetch
-  // serveur : on attend le chargement client.
   produitsInitiaux: Produit[] | null;
   extrasInitiaux: Extra[];
+}
+
+// Les produits disponibles d'abord, les épuisés en fin de rangée.
+function trier(produits: Produit[]): Produit[] {
+  return [...produits].sort((a, b) => Number(estEpuise(a)) - Number(estEpuise(b)) || a.prix - b.prix);
 }
 
 export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSectionProps) {
   const [produits, setProduits] = useState<Produit[] | null>(produitsInitiaux);
   const [extras, setExtras] = useState<Extra[]>(extrasInitiaux);
-  const [activeCategory, setActiveCategory] = useState('tout');
-  const [selectedProduct, setSelectedProduct] = useState<Produit | null>(null);
+  const [selection, setSelection] = useState<Produit | null>(null);
   const [erreur, setErreur] = useState(false);
-  const { synchroniser } = useCart();
+  const [active, setActive] = useState<CategorieProduit>('salee');
+  const { synchroniser, addToCart } = useCart();
 
-  // Rafraîchissement silencieux : la page est mise en cache (ISR), le
-  // stock et la disponibilité sont donc rechargés au montage.
   useEffect(() => {
     let actif = true;
     void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
@@ -42,56 +49,85 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     };
   }, [synchroniser]);
 
-  const categories = useMemo(
-    () => CATEGORIES.filter((c) => c.id === 'tout' || produits?.some((p) => p.categorie === c.id)),
+  const rubriques = useMemo(
+    () =>
+      RUBRIQUES.map((r) => ({ ...r, produits: trier((produits ?? []).filter((p) => p.categorie === r.categorie)) })).filter(
+        (r) => r.produits.length > 0
+      ),
     [produits]
   );
 
-  const filtres = useMemo(
-    () => (produits ?? []).filter((p) => activeCategory === 'tout' || p.categorie === activeCategory),
-    [produits, activeCategory]
-  );
+  // Onglet actif = rangée la plus visible à l'écran.
+  useEffect(() => {
+    const sections = rubriques
+      .map((r) => document.getElementById(`carte-${r.categorie}`))
+      .filter((el): el is HTMLElement => !!el);
+    if (sections.length === 0) return;
+    const obs = new IntersectionObserver(
+      (entrees) => {
+        const visible = entrees.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActive(visible.target.id.replace('carte-', '') as CategorieProduit);
+      },
+      { rootMargin: '-35% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] }
+    );
+    sections.forEach((s) => obs.observe(s));
+    return () => obs.disconnect();
+  }, [rubriques]);
 
   return (
-    <section id="menu" className="py-16 min-h-screen scroll-mt-16">
-      <div className="text-center mb-6 px-6 max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-black font-serif text-stone-900 tracking-tight">
-          Notre <span className="text-amber-600">Carte</span>
-        </h2>
-        <p className="text-stone-600 mt-3 text-base md:text-lg">
-          Sélectionnez vos gourmandises préférées et personnalisez vos extras
-        </p>
+    <section id="carte" className="bg-kc-indigo text-kc-beurre pb-28 scroll-mt-16">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-4">
+        <h2 className="font-display text-5xl sm:text-6xl leading-none">La carte</h2>
+        <p className="mt-3 text-kc-beurre/70 text-base">Faites glisser, touchez une crêpe pour la composer.</p>
       </div>
 
-      <CategoryTabs categories={categories} activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
-
-      <div className="max-w-7xl mx-auto px-6">
-        {produits === null ? (
-          erreur ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-stone-200/80 p-8 text-stone-500">
-              Impossible de charger la carte. Vérifiez votre connexion puis rechargez la page.
-            </div>
-          ) : (
-            <div className="flex justify-center items-center py-20 text-amber-600" aria-label="Chargement de la carte">
-              <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-          )
-        ) : filtres.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-stone-200/80 p-8 text-stone-500">
-            Aucun produit disponible dans cette catégorie pour le moment.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtres.map((produit) => (
-              <ProductCard key={produit.id} produit={produit} onOpenCustomization={setSelectedProduct} />
+      {rubriques.length > 1 && (
+        <nav
+          aria-label="Rubriques de la carte"
+          className="sticky top-16 z-30 mt-6 bg-kc-indigo/95 backdrop-blur-md border-b border-white/10"
+        >
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-3 flex gap-2 overflow-x-auto scrollbar-none">
+            {rubriques.map((r) => (
+              <a
+                key={r.categorie}
+                href={`#carte-${r.categorie}`}
+                aria-current={active === r.categorie ? 'true' : undefined}
+                className={`shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  active === r.categorie
+                    ? 'bg-kc-beurre text-kc-indigo'
+                    : 'text-kc-beurre/80 border border-kc-beurre/25 hover:border-kc-beurre/60'
+                }`}
+              >
+                {r.court}
+              </a>
             ))}
           </div>
-        )}
-      </div>
-
-      {selectedProduct && (
-        <ProductModal produit={selectedProduct} extras={extras} onClose={() => setSelectedProduct(null)} />
+        </nav>
       )}
+
+      {produits === null ? (
+        <div className="max-w-6xl mx-auto px-5 py-20 text-center text-kc-beurre/80">
+          {erreur ? (
+            <p>La carte n&apos;a pas pu se charger. Vérifiez votre connexion puis rechargez la page.</p>
+          ) : (
+            <Loader2 className="w-8 h-8 animate-spin mx-auto" aria-label="Chargement de la carte" />
+          )}
+        </div>
+      ) : (
+        rubriques.map((r) => (
+          <PlaqueRail
+            key={r.categorie}
+            id={`carte-${r.categorie}`}
+            titre={r.titre}
+            unite={r.unite}
+            produits={r.produits}
+            onChoisir={setSelection}
+            onAjouterDirect={(p) => addToCart(p)}
+          />
+        ))
+      )}
+
+      {selection && <ProductModal produit={selection} extras={extras} onClose={() => setSelection(null)} />}
     </section>
   );
 }

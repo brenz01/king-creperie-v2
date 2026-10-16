@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useCart, cleLigne } from '@/context/CartContext';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-stone-950/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-kc-nuit/60 backdrop-blur-sm z-50"
           />
 
           <motion.div
@@ -41,12 +41,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white z-50 shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-kc-lait text-kc-encre z-50 shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-kc-encre/10">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-amber-700" />
-                <h2 className="font-serif text-xl font-semibold text-stone-900">Votre panier</h2>
+                <ShoppingBag className="w-5 h-5 text-kc-bissap" />
+                <h2 className="font-display text-2xl">Votre panier</h2>
               </div>
               <button onClick={onClose} aria-label="Fermer le panier" className="p-2 rounded-lg hover:bg-stone-100 text-stone-500 transition-colors">
                 <X className="w-5 h-5" />
@@ -65,10 +65,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   {cart.map((item) => {
                     const cle = cleLigne(item.produit);
                     return (
-                      <div key={cle} className="flex gap-3 pb-4 border-b border-stone-100 last:border-0">
+                      <div key={cle} className="flex gap-3 pb-4 border-b border-kc-encre/10 last:border-0">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-stone-900 text-sm leading-snug">{item.produit.nom}</p>
-                          <p className="text-xs text-amber-700 font-medium mt-1">
+                          <p className="text-xs text-kc-bissap font-medium mt-1">
                             {item.produit.prix.toLocaleString('fr-FR')} FCFA
                           </p>
 
@@ -98,8 +98,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           </div>
                         </div>
 
-                        <span className="font-serif font-semibold text-stone-900 text-sm shrink-0">
-                          {(item.produit.prix * item.quantite).toLocaleString('fr-FR')} FCFA
+                        <span className="font-display text-base shrink-0">
+                          {(item.produit.prix * item.quantite).toLocaleString('fr-FR')} F
                         </span>
                       </div>
                     );
@@ -109,21 +109,20 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </div>
 
             {cart.length > 0 && (
-              <div className="border-t border-stone-100 px-6 py-5 bg-stone-50 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="border-t border-kc-encre/10 px-6 py-5 bg-white/60 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-sm text-stone-600">Sous-total</span>
-                  <span className="font-serif text-lg font-semibold text-stone-900">
-                    {totalAmount.toLocaleString('fr-FR')} FCFA
+                  <span className="font-display text-2xl">
+                    {totalAmount.toLocaleString('fr-FR')} F
                   </span>
                 </div>
                 <p className="text-xs text-stone-400 mb-4">Frais de livraison calculés à l&apos;étape suivante</p>
                 <Link
                   href="/commande"
                   onClick={onClose}
-                  className="w-full bg-stone-900 hover:bg-amber-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                  className="w-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-colors"
                 >
                   <span>Passer la commande</span>
-                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             )}

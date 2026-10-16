@@ -1,100 +1,61 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Crown, Menu as MenuIcon, X, Download, Share } from 'lucide-react';
+import { Crown, Menu as MenuIcon, X, Download, Share, ShoppingBag } from 'lucide-react';
 import { useInstallation } from '@/lib/pwa/install';
+import { useCart } from '@/context/CartContext';
 
 export default function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [ouvert, setOuvert] = useState(false);
   const installation = useInstallation();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const { totalCount } = useCart();
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-brand-cream/95 backdrop-blur-md shadow-sm border-b border-stone-200/80 py-3'
-          : 'bg-brand-cream/70 backdrop-blur-sm border-b border-stone-200/40 py-4'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <Crown className="w-7 h-7 text-amber-700 group-hover:rotate-12 transition-transform duration-300" />
-          <span className="font-serif text-xl font-bold tracking-wide text-stone-900">
-            King <span className="text-amber-700 italic font-medium">Crêperie</span>
-          </span>
+    <header className="fixed top-0 inset-x-0 z-50 bg-kc-indigo/95 backdrop-blur-md text-kc-beurre pt-[env(safe-area-inset-top)]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2" onClick={() => setOuvert(false)}>
+          <Crown className="w-6 h-6 text-kc-caramel" strokeWidth={2.4} />
+          <span className="font-display text-xl leading-none tracking-tight">King Crêperie</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-700">
-          <Link href="/#menu" className="hover:text-amber-700 transition-colors">
-            Notre Carte
-          </Link>
-          <Link href="/suivi" className="hover:text-amber-700 transition-colors">
-            Suivi de Commande
-          </Link>
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium">
+          <Link href="/#carte" className="hover:text-white transition-colors">La carte</Link>
+          <Link href="/suivi" className="hover:text-white transition-colors">Suivre ma commande</Link>
           <Link
             href="/commande"
-            className="flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold px-4 py-2 rounded-full transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />
-            <span>Commander</span>
+            Mon panier{totalCount > 0 ? ` (${totalCount})` : ''}
           </Link>
         </nav>
 
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-stone-800 hover:text-amber-700 transition-colors p-2"
-          aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-          aria-expanded={mobileMenuOpen}
+          onClick={() => setOuvert((o) => !o)}
+          className="md:hidden p-2 -mr-2"
+          aria-label={ouvert ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={ouvert}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+          {ouvert ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
         </button>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-brand-cream/98 backdrop-blur-lg border-b border-stone-200 px-6 py-6 flex flex-col gap-4 text-center shadow-lg">
-          <Link
-            href="/#menu"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-stone-800 font-medium hover:text-amber-700 py-2 transition-colors border-b border-stone-100"
-          >
-            Notre Carte
-          </Link>
-          <Link
-            href="/suivi"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-stone-800 font-medium hover:text-amber-700 py-2 transition-colors border-b border-stone-100"
-          >
-            Suivi de Commande
-          </Link>
-          <Link
-            href="/commande"
-            onClick={() => setMobileMenuOpen(false)}
-            className="bg-stone-900 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-lg justify-center flex items-center gap-2 transition-colors shadow-md"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Commander</span>
+      {ouvert && (
+        <div className="md:hidden border-t border-white/10 px-4 pb-5 pt-2 flex flex-col text-base">
+          <Link href="/#carte" onClick={() => setOuvert(false)} className="py-3 border-b border-white/10">La carte</Link>
+          <Link href="/suivi" onClick={() => setOuvert(false)} className="py-3 border-b border-white/10">Suivre ma commande</Link>
+          <Link href="/commande" onClick={() => setOuvert(false)} className="py-3 border-b border-white/10">
+            Mon panier{totalCount > 0 ? ` (${totalCount})` : ''}
           </Link>
           {installation.mode === 'android' && (
-            <button
-              onClick={() => void installation.installer()}
-              className="flex items-center justify-center gap-2 text-amber-800 font-semibold py-2"
-            >
-              <Download className="w-4 h-4" /> Installer l&apos;app
+            <button onClick={() => void installation.installer()} className="flex items-center gap-2 py-3 text-kc-caramel font-semibold">
+              <Download className="w-4 h-4" /> Installer l&apos;app sur ce téléphone
             </button>
           )}
           {installation.mode === 'ios' && (
-            <p className="flex items-center justify-center gap-1.5 text-xs text-stone-500">
-              Installer l&apos;app : <Share className="w-3.5 h-3.5" /> Partager → Sur l&apos;écran d&apos;accueil
+            <p className="flex items-center gap-1.5 py-3 text-sm text-kc-beurre/70">
+              Pour installer l&apos;app : <Share className="w-4 h-4" /> Partager, puis « Sur l&apos;écran d&apos;accueil »
             </p>
           )}
         </div>

@@ -38,12 +38,12 @@ export default function InstallPrompt({ contexte = 'suivi' }: { contexte?: 'suiv
       : 'Commandez en 2 touches depuis votre écran d’accueil — sans passer par un store.';
 
   return (
-    <div className="relative bg-stone-900 text-white rounded-2xl p-5 shadow-lg">
+    <div className="relative bg-kc-indigo text-kc-beurre rounded-2xl p-5 shadow-lg">
       <button onClick={fermer} aria-label="Plus tard" className="absolute top-3 right-3 p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-white/10">
         <X className="w-4 h-4" />
       </button>
       <div className="flex items-start gap-3 pr-6">
-        <div className="bg-amber-700 p-2.5 rounded-xl shrink-0">
+        <div className="bg-kc-indigo p-2.5 rounded-xl shrink-0">
           <Smartphone className="w-5 h-5" />
         </div>
         <div className="space-y-3">
@@ -57,7 +57,7 @@ export default function InstallPrompt({ contexte = 'suivi' }: { contexte?: 'suiv
                 const ok = await etat.installer();
                 if (!ok) fermer();
               }}
-              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Installer l’app
@@ -65,12 +65,12 @@ export default function InstallPrompt({ contexte = 'suivi' }: { contexte?: 'suiv
           ) : (
             <ol className="text-sm text-stone-200 space-y-1.5">
               <li className="flex items-center gap-2">
-                <span className="text-amber-400 font-bold">1.</span> Touchez
+                <span className="text-kc-caramel font-bold">1.</span> Touchez
                 <Share className="w-4 h-4 inline text-sky-400" aria-label="Partager" />
                 <span className="font-semibold">Partager</span> dans Safari
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-amber-400 font-bold">2.</span> Choisissez
+                <span className="text-kc-caramel font-bold">2.</span> Choisissez
                 <SquarePlus className="w-4 h-4 inline" aria-hidden />
                 <span className="font-semibold">Sur l’écran d’accueil</span>
               </li>

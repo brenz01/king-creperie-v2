@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react';
 import type { Produit } from '@/types';
+import type { Extra } from '@/lib/extras';
 
 export interface CartItem {
   produit: Produit;
@@ -68,8 +69,61 @@ function sAbonner(f: () => void) {
   };
 }
 
+// Résultat d'une resynchronisation du panier avec le catalogue réel.
+export interface ChangementsPanier {
+  retires: string[]; // produits (ou extras) qui ne sont plus disponibles
+  prixModifies: string[]; // lignes dont le prix a changé depuis l'ajout
+}
+
+// Recalcule chaque ligne à partir du catalogue frais : le panier est
+// stocké dans localStorage avec les prix du moment de l'ajout, qui
+// peuvent avoir changé (ou le produit être épuisé) depuis. Sans ça, le
+// client voit un total différent de celui que le serveur facture.
+export function reconcilierPanier(
+  panier: CartItem[],
+  produits: Produit[],
+  extras: readonly Extra[]
+): { panier: CartItem[]; changements: ChangementsPanier } {
+  const produitsMap = new Map(produits.map((p) => [p.id, p]));
+  const extrasMap = new Map(extras.map((e) => [e.id, e]));
+  const retires: string[] = [];
+  const prixModifies: string[] = [];
+  const suivant: CartItem[] = [];
+
+  for (const item of panier) {
+    const frais = produitsMap.get(item.produit.id);
+    const epuise = !frais || !frais.disponible || (frais.stock_gere === true && frais.stock_quantite === 0);
+    if (epuise) {
+      retires.push(item.produit.nom);
+      continue;
+    }
+    const choisis = item.produit.extrasChoisis ?? [];
+    const extrasFrais = choisis.map((e) => extrasMap.get(e.id));
+    if (extrasFrais.some((e) => !e)) {
+      retires.push(item.produit.nom);
+      continue;
+    }
+    const liste = extrasFrais as Extra[];
+    const prix = frais.prix + liste.reduce((s, e) => s + e.prix, 0);
+    const nom = liste.length > 0 ? `${frais.nom} (${liste.map((e) => e.nom).join(', ')})` : frais.nom;
+    if (prix !== item.produit.prix) prixModifies.push(nom);
+    suivant.push({
+      ...item,
+      produit: {
+        ...frais,
+        nom,
+        prix,
+        prixBase: frais.prix,
+        extrasChoisis: liste.length > 0 ? liste.map((e) => ({ id: e.id, nom: e.nom, prix: e.prix })) : undefined,
+      },
+    });
+  }
+  return { panier: suivant, changements: { retires, prixModifies } };
+}
+
 interface CartContextType {
   cart: CartItem[];
+  synchroniser: (produits: Produit[], extras: readonly Extra[]) => ChangementsPanier;
   addToCart: (produit: Produit, quantite?: number) => void;
   removeFromCart: (cle: string) => void;
   updateQuantity: (cle: string, delta: number) => void;
@@ -108,6 +162,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => ecrire([]), []);
 
+  const synchroniser = useCallback((produits: Produit[], extras: readonly Extra[]) => {
+    const actuel = lire();
+    const { panier, changements } = reconcilierPanier(actuel, produits, extras);
+    const modifie =
+      changements.retires.length > 0 ||
+      panier.some((l, i) => l.produit.prix !== actuel[i]?.produit.prix || l.produit.nom !== actuel[i]?.produit.nom);
+    if (modifie) ecrire(panier);
+    return changements;
+  }, []);
+
   const value = useMemo<CartContextType>(
     () => ({
       cart,
@@ -115,10 +179,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart,
       updateQuantity,
       clearCart,
+      synchroniser,
       totalCount: cart.reduce((s, i) => s + i.quantite, 0),
       totalAmount: cart.reduce((s, i) => s + i.produit.prix * i.quantite, 0),
     }),
-    [cart, addToCart, removeFromCart, updateQuantity, clearCart]
+    [cart, addToCart, removeFromCart, updateQuantity, clearCart, synchroniser]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

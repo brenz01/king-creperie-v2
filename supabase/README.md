@@ -25,9 +25,11 @@ d'annulation, push déclenché, panne `pg_net` sans impact sur la commande).
 ## Réglages Auth à faire dans le dashboard (non scriptables)
 
 - **Authentication → Sign In / Providers → Email** : désactiver *Allow new users to sign up*.
-- **Authentication → Attack Protection** : activer le CAPTCHA (Cloudflare Turnstile).
-  Le rate limit de `/api/admin/login` est contournable en appelant
-  directement `/auth/v1/token` : c'est le CAPTCHA côté Supabase qui protège réellement.
+- **CAPTCHA (Authentication → Attack Protection) : NE PAS l'activer seul.**
+  Une fois activé, Supabase refuse toute connexion sans jeton CAPTCHA :
+  la page /admin/login doit d'abord intégrer le widget Turnstile et
+  transmettre `captchaToken` (évolution de code à faire avant).
+  En attendant, garder un mot de passe admin long et unique.
 - **MFA** : activer TOTP pour le compte staff, puis exiger `aal2` dans `is_staff()` :
   ```sql
   -- dans is_staff() : ... and (auth.jwt() ->> 'aal') = 'aal2'

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCart, cleLigne } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { Send, MapPin, Phone, User, Trash2, ArrowLeft, Clock, WifiOff, RefreshCw, Truck } from 'lucide-react';
@@ -9,6 +9,8 @@ import { ZONES_LIVRAISON } from '@/lib/zones';
 import { genererUuid } from '@/lib/uuid';
 import { CLE_WHATSAPP } from '@/lib/whatsapp';
 import { useEstHydrate } from '@/lib/useEstHydrate';
+import { chargerExtras, chargerProduits } from '@/lib/catalogue';
+import type { ChangementsPanier } from '@/context/CartContext';
 import { Loader2 } from 'lucide-react';
 
 interface ItemServeur {
@@ -54,10 +56,25 @@ function construireMessageWhatsApp(c: ReponseCommande, origine: string): string 
 }
 
 export default function CommandePage() {
-  const { cart, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { cart, totalAmount, updateQuantity, removeFromCart, clearCart, synchroniser } = useCart();
   const router = useRouter();
   const hydrate = useEstHydrate();
   const [redirection, setRedirection] = useState(false);
+  const [majPanier, setMajPanier] = useState<ChangementsPanier | null>(null);
+
+  // Le panier vient de localStorage : on le recale sur les prix et la
+  // disponibilité réels avant que le client ne valide un total faux.
+  useEffect(() => {
+    let actif = true;
+    void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
+      if (!actif || !p) return;
+      const changements = synchroniser(p, e);
+      if (changements.retires.length > 0 || changements.prixModifies.length > 0) setMajPanier(changements);
+    });
+    return () => {
+      actif = false;
+    };
+  }, [synchroniser]);
 
   const [zoneIndex, setZoneIndex] = useState<number | null>(null);
   const [nom, setNom] = useState('');
@@ -187,6 +204,18 @@ export default function CommandePage() {
       <h1 className="font-serif text-3xl md:text-4xl font-semibold text-stone-900 mb-8">
         Validation de la <span className="italic text-amber-700">commande</span>
       </h1>
+
+      {majPanier && (
+        <div role="status" className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl mb-6 text-sm">
+          <p className="font-semibold">Votre panier a été mis à jour</p>
+          {majPanier.retires.length > 0 && (
+            <p className="mt-1">Plus disponible, retiré : {majPanier.retires.join(', ')}.</p>
+          )}
+          {majPanier.prixModifies.length > 0 && (
+            <p className="mt-1">Prix actualisé : {majPanier.prixModifies.join(', ')}.</p>
+          )}
+        </div>
+      )}
 
       {errorMsg && (
         <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-sm font-medium flex items-start gap-3">

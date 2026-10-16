@@ -8,6 +8,7 @@ import ProductCard from './ProductCard';
 import CategoryTabs, { CATEGORIES } from './CategoryTabs';
 import ProductModal from './ProductModal';
 import { Loader2 } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
 
 interface MenuSectionProps {
   // Rendu serveur (SEO + affichage immédiat). null = échec du fetch
@@ -22,6 +23,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
   const [activeCategory, setActiveCategory] = useState('tout');
   const [selectedProduct, setSelectedProduct] = useState<Produit | null>(null);
   const [erreur, setErreur] = useState(false);
+  const { synchroniser } = useCart();
 
   // Rafraîchissement silencieux : la page est mise en cache (ISR), le
   // stock et la disponibilité sont donc rechargés au montage.
@@ -29,14 +31,16 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     let actif = true;
     void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
       if (!actif) return;
-      if (p) setProduits(p);
-      else setErreur(true);
+      if (p) {
+        setProduits(p);
+        synchroniser(p, e);
+      } else setErreur(true);
       setExtras(e);
     });
     return () => {
       actif = false;
     };
-  }, []);
+  }, [synchroniser]);
 
   const categories = useMemo(
     () => CATEGORIES.filter((c) => c.id === 'tout' || produits?.some((p) => p.categorie === c.id)),

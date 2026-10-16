@@ -11,11 +11,23 @@ d'octobre 2026** et les requêtes d'audit.
 
 | # | Fichier | Effet |
 |---|---|---|
-| 1 | `sql/00_audit_lecture_seule.sql` | État des lieux (lecture seule). Garder le résultat. |
+| 1 | `sql/01_audit_en_une_requete.sql` | État des lieux (lecture seule), un seul tableau. |
 | 2 | `migrations/20261015120000_durcissement.sql` | RPC sensibles réservés à `service_role`, plus d'INSERT client sur `commandes`/`commande_items`, annulation → stock restitué + verrou. |
-| 3 | `migrations/20261015120100_push_notifications.sql` | Table `push_subscriptions` + trigger `pg_net` vers `/api/push/dispatch`. Sans effet tant que l'étape 4 n'est pas faite. |
-| 4 | `sql/configurer_secrets_push.sql` | URL + secret dans Vault (remplacer `<SECRET>` dans l'éditeur, **ne pas commiter**). |
-| 5 | `sql/00_audit_lecture_seule.sql` | Rejouer et comparer. |
+| 3 | `migrations/20261016070000_durcissement_complementaire.sql` | Plus d'écriture client sur `staff` / `commandes_audit_log`, TRUNCATE retiré, policy récursive de `staff` corrigée. |
+| 4 | `migrations/20261015120100_push_notifications.sql` | Table `push_subscriptions` + trigger `pg_net` vers `/api/push/dispatch`. Sans effet tant que l'étape 5 n'est pas faite. |
+| 5 | `sql/configurer_secrets_push.sql` | URL + secret dans Vault (remplacer `<SECRET>` dans l'éditeur, **ne pas commiter**). |
+| 6 | `sql/01_audit_en_une_requete.sql` | Rejouer et comparer. |
+
+### Constats de l'audit de production (16/10/2026)
+
+- `creer_commande_complete` / `decrementer_stock_si_gere` : déjà réservées à `service_role` ✅
+- **Policy `commandes_creation_v2` (INSERT, rôle public)** : n'importe quel visiteur pouvait créer une
+  commande directement via l'API REST avec la clé publique, au total de son choix, sans passer par
+  `/api/commandes` (ni prix serveur, ni rate limit). → corrigé par la migration 2.
+- `staff` / `commandes_audit_log` : INSERT/UPDATE/DELETE/TRUNCATE accordés à anon et authenticated,
+  bloqués seulement par la RLS (sauf TRUNCATE, qui l'ignore). → migration 3.
+- Policy `staff_lecture_staff` récursive (« infinite recursion detected »). → migration 3.
+- Realtime : `anon` n'a que SELECT sur `commande-%`, aucune policy d'écriture ✅
 
 Les migrations sont idempotentes et ont été testées sur PostgreSQL 16
 contre une reproduction du schéma (13 scénarios : RPC/INSERT anonymes

@@ -8,6 +8,8 @@
 //   GET  /__log                appels RPC reçus + commandes créées
 //   POST /__statut/:id/:statut change le statut d'une commande client
 //   POST /__boutique           modifie horaires / pause
+//   POST /__panne              {"produits": true} : lecture des produits en
+//                              erreur 503 (test de régénération ISR)
 // =====================================================================
 import http from 'node:http';
 import fs from 'node:fs';
@@ -116,6 +118,8 @@ function initialiser() {
     audit: [],
     commandes: new Map(),
     rpcLog: [],
+    panneProduits: false,
+    lecturesEnPanne: 0,
     boutique: { horaires: tousLesJours([TOUJOURS]), fermeture_exceptionnelle: false, message_fermeture: null },
   };
 }
@@ -152,7 +156,12 @@ function traiter(req, res, corps) {
     initialiser();
     return envoyer(res, 200, { ok: true });
   }
-  if (u.pathname === '/__log') return envoyer(res, 200, { rpcLog: e.rpcLog, commandes: [...e.commandes.values()] });
+  if (u.pathname === '/__log')
+    return envoyer(res, 200, { rpcLog: e.rpcLog, commandes: [...e.commandes.values()], lecturesEnPanne: e.lecturesEnPanne });
+  if (u.pathname === '/__panne') {
+    e.panneProduits = json().produits === true;
+    return envoyer(res, 200, { panneProduits: e.panneProduits });
+  }
   if (u.pathname.startsWith('/__statut/')) {
     const [, , cid, st] = u.pathname.split('/');
     const c = e.commandes.get(cid);
@@ -172,6 +181,10 @@ function traiter(req, res, corps) {
       if (!p) return envoyer(res, 200, []);
       Object.assign(p, json());
       return envoyer(res, 200, [{ id: p.id }]);
+    }
+    if (e.panneProduits) {
+      e.lecturesEnPanne++;
+      return envoyer(res, 503, { code: 'PGRST000', message: 'panne simulée du catalogue' });
     }
     const ids = filtreIn(u);
     return envoyer(res, 200, ids ? e.produits.filter((p) => ids.includes(p.id)) : e.produits);

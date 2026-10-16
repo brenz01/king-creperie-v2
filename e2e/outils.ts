@@ -12,9 +12,12 @@ const poster = async (chemin: string, corps?: unknown) => {
 export const reinitialiser = () => poster('/__reset');
 export const changerStatut = (id: string, statut: string) => poster(`/__statut/${id}/${statut}`);
 export const reglerBoutique = (b: Record<string, unknown>) => poster('/__boutique', b);
+/** Met la lecture des produits en erreur 503 (remise à zéro par reinitialiser). */
+export const panneCatalogue = (active: boolean) => poster('/__panne', { produits: active });
 export const journal = async (): Promise<{
   rpcLog: Array<{ p_total: number; p_adresse_livraison: string }>;
   commandes: Array<{ id: string }>;
+  lecturesEnPanne: number;
 }> => (await fetch(MOCK + '/__log')).json();
 
 export const tousLesJours = (plages: Array<{ ouvre: string; ferme: string }>) =>

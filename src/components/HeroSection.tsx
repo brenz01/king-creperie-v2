@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PastilleBoutique } from './StatutBoutique';
 
 // Accueil : une phrase, une crêpe qui tourne (la vidéo dans un cercle,
 // comme sur la plaque), deux actions. Le cercle annonce la forme de
@@ -36,7 +37,8 @@ export default function HeroSection() {
           <p className="mt-5 max-w-md text-base sm:text-lg text-kc-brume leading-relaxed">
             Crêpes salées, sucrées et jus maison. Préparées aux Almadies, livrées de Ngor au Plateau. Vous payez en espèces à la réception.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <PastilleBoutique />
+          <div className="mt-6 flex flex-wrap gap-3">
             <a
               href="#carte"
               className="inline-flex items-center bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base px-6 py-3.5 rounded-full transition-colors"

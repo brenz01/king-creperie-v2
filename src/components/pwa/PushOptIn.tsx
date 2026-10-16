@@ -16,9 +16,11 @@ interface PushOptInProps {
   libelle?: string;
   /** Variante compacte pour l'en-tête sombre de l'espace staff. */
   compact?: boolean;
+  /** Ne rien afficher une fois les alertes actives (bandeau de rappel). */
+  masquerSiActif?: boolean;
 }
 
-export default function PushOptIn({ cible, libelle, compact }: PushOptInProps) {
+export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: PushOptInProps) {
   const permission = useSyncExternalStore(sAbonner, lirePermission, () => 'unsupported');
   const installation = useInstallation();
   const hydrate = useEstHydrate();
@@ -66,6 +68,8 @@ export default function PushOptIn({ cible, libelle, compact }: PushOptInProps) {
   // Déjà autorisé : l'abonnement est réenregistré au toucher (idempotent),
   // utile après un changement de téléphone ou une réinstallation.
   const actif = etat === 'actif' || (permission === 'granted' && etat !== 'erreur' && etat !== 'chargement');
+
+  if (actif && masquerSiActif) return null;
 
   if (compact) {
     return (

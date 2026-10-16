@@ -2,12 +2,26 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, Loader2, MessageCircle, Minus, Plus, RefreshCw, ShoppingBag, Trash2, WifiOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  Loader2,
+  MessageCircle,
+  Minus,
+  Plus,
+  RefreshCw,
+  ShoppingBag,
+  Trash2,
+  WifiOff,
+} from 'lucide-react';
 import { useCart, cleLigne, type ChangementsPanier } from '@/context/CartContext';
 import { chargerExtras, chargerProduits } from '@/lib/catalogue';
 import { FRAIS_MAX, FRAIS_MIN, QUARTIERS, trouverQuartier, trouverZone } from '@/lib/zones';
 import { genererUuid } from '@/lib/uuid';
 import { CLE_WHATSAPP, urlContactWhatsApp, urlWhatsApp } from '@/lib/whatsapp';
+import { rafraichirBoutique, useBoutique } from '@/lib/useBoutique';
+import { phraseFermeture } from '@/lib/horaires';
 
 // ------------------------------------------------------------------
 // Parcours de commande en 3 étapes, utilisé dans le panneau (même page
@@ -89,6 +103,9 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
   const cleIdempotence = useRef<string>(genererUuid());
   const envoiEnCours = useRef(false);
   const haut = useRef<HTMLDivElement>(null);
+  // Boutique fermée (horaires ou pause) : on garde le panier, on bloque l'envoi.
+  const { etat: etatBoutique } = useBoutique();
+  const ferme = etatBoutique !== null && !etatBoutique.ouvert;
 
   // Recalage du panier (prix, disponibilité) à l'ouverture.
   useEffect(() => {
@@ -168,7 +185,8 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
 
     const data: unknown = await res.json().catch(() => null);
     if (!res.ok || !data) {
-      const d = (data ?? {}) as { error?: string; details?: string[] };
+      const d = (data ?? {}) as { error?: string; details?: string[]; ferme?: boolean };
+      if (d.ferme) void rafraichirBoutique();
       const texte =
         (Array.isArray(d.details) ? d.details.join(' ') : d.error) || 'La commande n’a pas pu être enregistrée. Réessayez.';
       return fin({ type: res.status >= 500 ? 'serveur' : 'validation', texte });
@@ -355,12 +373,25 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
 
         {recap}
 
+        {ferme && etatBoutique && (
+          <div role="status" className="bg-kc-beurre rounded-2xl p-4 flex gap-3">
+            <Clock className="w-5 h-5 shrink-0 mt-0.5 text-kc-indigo" />
+            <div>
+              <p className="font-semibold">{phraseFermeture(etatBoutique)}</p>
+              <p className="text-sm text-kc-encre/70 mt-1">
+                Votre panier est gardé sur ce téléphone. Vous pourrez commander dès l’ouverture.
+              </p>
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => allerA('livraison')}
-          className="bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 rounded-full transition-colors"
+          disabled={ferme}
+          className="bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 rounded-full transition-colors disabled:opacity-50 disabled:hover:bg-kc-bissap"
         >
-          Passer à la livraison
+          {ferme ? 'Commandes fermées pour le moment' : 'Passer à la livraison'}
         </button>
         {mode === 'panneau' && (
           <button type="button" onClick={onFermer} className="text-kc-encre/70 font-semibold py-1">
@@ -509,6 +540,18 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
 
         <div className="bg-white rounded-3xl border border-kc-encre/10 p-5">{recap}</div>
 
+        {ferme && etatBoutique && (
+          <div role="status" className="bg-kc-beurre rounded-2xl p-4 flex gap-3">
+            <Clock className="w-5 h-5 shrink-0 mt-0.5 text-kc-indigo" />
+            <div>
+              <p className="font-semibold">{phraseFermeture(etatBoutique)}</p>
+              <p className="text-sm text-kc-encre/70 mt-1">
+                Votre panier est gardé sur ce téléphone. Vous pourrez commander dès l’ouverture.
+              </p>
+            </div>
+          </div>
+        )}
+
         {erreur && (
           <div role="alert" className="bg-kc-bissap/10 text-kc-bissap-fonce rounded-2xl p-4 text-sm font-medium flex gap-3">
             {erreur.type === 'reseau' && <WifiOff className="w-5 h-5 shrink-0" />}
@@ -519,7 +562,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
 
         <button
           type="submit"
-          disabled={!zone || envoi}
+          disabled={!zone || envoi || ferme}
           className="flex items-center justify-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 rounded-full transition-colors disabled:opacity-50"
         >
           {envoi ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}

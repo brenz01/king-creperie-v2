@@ -33,8 +33,8 @@ export default function HeroSection() {
           <h1 className="font-display text-[2.35rem] leading-[1.04] sm:text-6xl md:text-[4.2rem] md:leading-[0.98] tracking-tight text-balance">
             Chaude, sortie de la plaque, livrée chez vous.
           </h1>
-          <p className="mt-5 max-w-md text-base sm:text-lg text-kc-beurre/80 leading-relaxed">
-            Crêpes salées, sucrées et jus maison aux Almadies. On livre de Ngor au Plateau, vous payez à la livraison.
+          <p className="mt-5 max-w-md text-base sm:text-lg text-kc-brume leading-relaxed">
+            Crêpes salées, sucrées et jus maison. Préparées aux Almadies, livrées de Ngor au Plateau. Vous payez en espèces à la réception.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a

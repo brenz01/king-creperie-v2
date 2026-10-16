@@ -5,9 +5,11 @@ import Image from 'next/image';
 import { Check, Plus } from 'lucide-react';
 import type { Produit } from '@/types';
 import { estPersonnalisable } from '@/lib/extras';
+import { afficherToast } from '@/lib/toast';
 
 interface PlaqueItemProps {
   produit: Produit;
+  disposition?: 'rang' | 'grille';
   onChoisir: (produit: Produit) => void;
   onAjouterDirect: (produit: Produit) => void;
 }
@@ -18,7 +20,8 @@ export function estEpuise(p: Produit): boolean {
 
 // Une crêpe vue du dessus : photo ronde posée sur son assiette, nom et
 // prix dessous, rien d'autre. Les détails s'ouvrent au toucher.
-export default function PlaqueItem({ produit, onChoisir, onAjouterDirect }: PlaqueItemProps) {
+export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, onAjouterDirect }: PlaqueItemProps) {
+  const rang = disposition === 'rang';
   const [ajoute, setAjoute] = useState(false);
   const epuise = estEpuise(produit);
   const aComposer = estPersonnalisable(produit.categorie);
@@ -32,12 +35,19 @@ export default function PlaqueItem({ produit, onChoisir, onAjouterDirect }: Plaq
       return;
     }
     onAjouterDirect(produit);
+    afficherToast(`${produit.nom} ajouté au panier.`);
     setAjoute(true);
     window.setTimeout(() => setAjoute(false), 1200);
   };
 
   return (
-    <li className="plaque-item snap-center sm:snap-start shrink-0 w-[52vw] max-w-[15rem] sm:w-52 flex flex-col items-center text-center">
+    <li
+      className={
+        rang
+          ? 'plaque-item snap-center sm:snap-start shrink-0 w-[52vw] max-w-[15rem] sm:w-52 flex flex-col items-center text-center'
+          : 'flex flex-col items-center text-center'
+      }
+    >
       <button
         type="button"
         onClick={agir}
@@ -54,7 +64,7 @@ export default function PlaqueItem({ produit, onChoisir, onAjouterDirect }: Plaq
         {/* L'assiette */}
         <span className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_18px_40px_-18px_rgba(0,0,0,0.7)]" />
         {/* La crêpe */}
-        <span className={`plaque-photo absolute inset-[7%] rounded-full overflow-hidden bg-kc-nuit ${epuise ? 'grayscale opacity-50' : ''}`}>
+        <span className={`${rang ? 'plaque-photo ' : ''}absolute inset-[7%] rounded-full overflow-hidden bg-kc-nuit ${epuise ? 'grayscale opacity-50' : ''}`}>
           {produit.image_url && (
             <Image
               src={produit.image_url}
@@ -69,12 +79,12 @@ export default function PlaqueItem({ produit, onChoisir, onAjouterDirect }: Plaq
 
         {epuise ? (
           <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto w-fit bg-kc-lait text-kc-encre text-sm font-semibold px-3 py-1 rounded-full">
-            Épuisé
+            Épuisé pour le moment
           </span>
         ) : (
           <span
             aria-hidden
-            className={`absolute bottom-[4%] right-[4%] w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+            className={`absolute bottom-[4%] right-[4%] ${rang ? 'w-12 h-12' : 'w-10 h-10'} rounded-full flex items-center justify-center shadow-lg transition-colors ${
               ajoute ? 'bg-kc-lait text-kc-encre' : 'bg-kc-bissap text-white'
             }`}
           >
@@ -83,14 +93,12 @@ export default function PlaqueItem({ produit, onChoisir, onAjouterDirect }: Plaq
         )}
       </button>
 
-      <p className="mt-4 px-2 text-kc-beurre font-semibold text-[0.95rem] leading-snug line-clamp-2 min-h-[2.6em]">
+      <p className={`${rang ? 'mt-4 text-base' : 'mt-3 text-[0.95rem]'} px-1 text-kc-beurre font-semibold leading-snug line-clamp-2 min-h-[2.6em]`}>
         {produit.nom}
       </p>
-      <p className="font-display text-2xl text-kc-caramel leading-none mt-1">
-        {prix} <span className="text-base">F</span>
-      </p>
+      <p className="prix text-xl text-kc-caramel leading-none mt-1.5">{prix} F</p>
       {stockBas && (
-        <p className="mt-1.5 text-xs font-semibold text-kc-beurre/80">Plus que {produit.stock_quantite}</p>
+        <p className="mt-1.5 text-sm font-semibold text-kc-brume">Plus que {produit.stock_quantite}</p>
       )}
     </li>
   );

@@ -13,7 +13,7 @@ import { Loader2 } from 'lucide-react';
 const RUBRIQUES: Array<{ categorie: CategorieProduit; titre: string; court: string; unite: string }> = [
   { categorie: 'salee', titre: 'Crêpes salées', court: 'Salées', unite: 'recettes' },
   { categorie: 'sucree', titre: 'Crêpes sucrées', court: 'Sucrées', unite: 'recettes' },
-  { categorie: 'boisson', titre: 'Boissons', court: 'Boissons', unite: 'boissons' },
+  { categorie: 'boisson', titre: 'Boissons et jus maison', court: 'Boissons', unite: 'boissons' },
 ];
 
 interface MenuSectionProps {
@@ -41,6 +41,10 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
       if (p) {
         setProduits(p);
         synchroniser(p, e);
+        // Lien partagé « ?produit=<id> » : ouvre directement la fiche.
+        const partage = new URLSearchParams(window.location.search).get('produit');
+        const cible = partage ? p.find((x) => x.id === partage && !estEpuise(x)) : undefined;
+        if (cible) setSelection(cible);
       } else setErreur(true);
       setExtras(e);
     });
@@ -78,7 +82,9 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     <section id="carte" className="bg-kc-indigo text-kc-beurre pb-28 scroll-mt-16">
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-4">
         <h2 className="font-display text-5xl sm:text-6xl leading-none">La carte</h2>
-        <p className="mt-3 text-kc-beurre/70 text-base">Faites glisser, touchez une crêpe pour la composer.</p>
+        <p className="mt-3 text-kc-brume text-base max-w-md leading-relaxed">
+          Glissez pour parcourir les recettes. Touchez une crêpe pour voir sa garniture et choisir vos extras.
+        </p>
       </div>
 
       {rubriques.length > 1 && (
@@ -108,7 +114,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
       {produits === null ? (
         <div className="max-w-6xl mx-auto px-5 py-20 text-center text-kc-beurre/80">
           {erreur ? (
-            <p>La carte n&apos;a pas pu se charger. Vérifiez votre connexion puis rechargez la page.</p>
+            <p>La carte ne charge pas. Vérifiez votre connexion puis rechargez la page.</p>
           ) : (
             <Loader2 className="w-8 h-8 animate-spin mx-auto" aria-label="Chargement de la carte" />
           )}

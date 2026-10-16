@@ -12,22 +12,23 @@
 
   --color-kc-indigo: #1f2a5c;
   --color-kc-nuit: #161e45;
-  --color-kc-encre: #1a1f3d;
-  --color-kc-beurre: #f7e7b4;
-  --color-kc-bissap: #b3264c;
-  --color-kc-bissap-fonce: #921c3c;
-  --color-kc-caramel: #e39b3a;
-  --color-kc-lait: #fffaf0;
+  --color-kc-encre: #282743;
+  --color-kc-beurre: #f7e6a7;
+  --color-kc-bissap: #be2d52;
+  --color-kc-bissap-fonce: #9c2142;
+  --color-kc-caramel: #f2a93b;
+  --color-kc-lait: #fff8e8;
+  --color-kc-brume: #e4e5ef;
 }
 
 @layer base {
   :root {
-    --bg-primary: #fffaf0;
+    --bg-primary: #fff8e8;
     --bg-card: #ffffff;
-    --text-primary: #1a1f3d;
+    --text-primary: #282743;
     --text-secondary: #5b5f7a;
-    --accent: #b3264c;
-    --accent-hover: #921c3c;
+    --accent: #be2d52;
+    --accent-hover: #9c2142;
     --border-color: #e9e2d0;
     --success: #4f7a4a;
   }
@@ -54,6 +55,14 @@
   html.lenis, html.lenis body { height: auto; }
   .lenis.lenis-smooth { scroll-behavior: auto !important; }
   .lenis.lenis-stopped { overflow: hidden; }
+}
+
+/* Prix : chiffres larges et alignés, pour comparer d'un coup d'œil. */
+@utility prix {
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 @utility scrollbar-none {

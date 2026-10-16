@@ -1,11 +1,18 @@
 import HeroSection from '@/components/HeroSection';
 import MenuSection from '@/components/MenuSection';
+import { chargerExtras, chargerProduits } from '@/lib/catalogue';
 
-export default function HomePage() {
+// ISR : la carte est rendue côté serveur (indexable, affichée sans
+// spinner) et régénérée au plus toutes les 60 s. Le stock exact est
+// rafraîchi côté client au montage.
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [produits, extras] = await Promise.all([chargerProduits(), chargerExtras()]);
   return (
     <>
       <HeroSection />
-      <MenuSection />
+      <MenuSection produitsInitiaux={produits} extrasInitiaux={extras} />
     </>
   );
 }

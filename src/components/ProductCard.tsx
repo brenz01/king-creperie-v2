@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Produit } from '@/types';
 import { useCart } from '@/context/CartContext';
+import { estPersonnalisable as categoriePersonnalisable } from '@/lib/extras';
 
 interface ProductCardProps {
   produit: Produit;
@@ -16,11 +17,13 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
 
-  const estPersonnalisable = produit.categorie === 'salee' || produit.categorie === 'sucree';
+  const epuise = !produit.disponible || (produit.stock_gere === true && produit.stock_quantite === 0);
+  const estPersonnalisable = !epuise && categoriePersonnalisable(produit.categorie);
   const estBestSeller = produit.prix >= 4500;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (epuise) return;
     addToCart(produit);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
@@ -48,16 +51,14 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
   };
 
   const renderBadgeStock = () => {
-    if (!produit.stock_gere || produit.stock_quantite === null || produit.stock_quantite === undefined) {
-      return null;
-    }
-    if (produit.stock_quantite === 0) {
+    if (epuise) {
       return (
         <span className="inline-flex items-center gap-1 bg-stone-800/90 text-stone-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
           Épuisé
         </span>
       );
     }
+    if (!produit.stock_gere || produit.stock_quantite == null) return null;
     if (produit.stock_quantite <= 3) {
       return (
         <span className="inline-flex items-center gap-1 bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
@@ -76,7 +77,7 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
       transition={{ duration: 0.35 }}
       onClick={() => estPersonnalisable && onOpenCustomization && onOpenCustomization(produit)}
       className={`group bg-white rounded-xl overflow-hidden flex flex-col border transition-all ${
-        estBestSeller ? 'border-t-[3px] border-t-amber-700 border-x-stone-200/70 border-b-stone-200/70' : 'border-stone-200/70'
+        estBestSeller && !epuise ? 'border-t-[3px] border-t-amber-700 border-x-stone-200/70 border-b-stone-200/70' : 'border-stone-200/70'
       } hover:shadow-[0_12px_32px_-12px_rgba(42,27,18,0.18)] hover:-translate-y-0.5 ${
         estPersonnalisable ? 'cursor-pointer' : ''
       }`}
@@ -98,7 +99,7 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
         )}
 
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {estBestSeller && (
+          {estBestSeller && !epuise && (
             <span className="inline-flex items-center gap-1 bg-amber-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
               <Star className="w-3 h-3 fill-white" /> Best-seller
             </span>
@@ -142,9 +143,9 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
           <button
             type="button"
             onClick={handleAdd}
-            disabled={!produit.disponible}
+            disabled={epuise}
             className={`flex-1 py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
-              !produit.disponible
+              epuise
                 ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
                 : added
                 ? 'bg-emerald-700 text-white'
@@ -159,7 +160,7 @@ export default function ProductCard({ produit, onOpenCustomization }: ProductCar
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                <span>{produit.disponible ? 'Ajouter' : 'Épuisé'}</span>
+                <span>{epuise ? 'Épuisé' : 'Ajouter'}</span>
               </>
             )}
           </button>

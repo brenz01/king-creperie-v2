@@ -111,7 +111,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     <section
       id="carte"
       aria-labelledby="titre-carte"
-      className="relative bg-kc-indigo text-kc-beurre pt-10 pb-28 scroll-mt-16 overflow-x-clip"
+      className="carte-reserve relative bg-kc-indigo text-kc-beurre pt-10 scroll-mt-16 overflow-x-clip"
     >
       {/* Au-dessus de la plaque : son disque (150vw) remonte sous les
           rubriques au lieu de les recouvrir. */}

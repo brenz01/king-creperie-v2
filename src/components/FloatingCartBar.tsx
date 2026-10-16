@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef } from 'react';
 import { useCart } from '@/context/CartContext';
 import { Check, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/lib/toast';
@@ -15,13 +16,33 @@ export default function FloatingCartBar() {
   // Confirmation d'ajout affichée ici, là où le client regarde.
   const toast = useToast();
   const ajout = toast?.genre === 'panier' ? toast : null;
+  const zone = useRef<HTMLDivElement>(null);
+  const visible = !(ouvert || totalCount === 0 || pathname === '/commande' || pathname === '/suivi' || pathname.startsWith('/admin'));
 
-  if (ouvert || totalCount === 0 || pathname === '/commande' || pathname === '/suivi' || pathname.startsWith('/admin')) {
-    return null;
-  }
+  // Hauteur réellement occupée en bas de l'écran (barre + marge + zone de
+  // sécurité), publiée en --reserve-panier : la carte s'en sert pour ne
+  // jamais placer une action dessous. 0 quand la barre est absente.
+  useLayoutEffect(() => {
+    const racine = document.documentElement;
+    const el = zone.current;
+    if (!visible || !el) {
+      racine.style.setProperty('--reserve-panier', '0px');
+      return;
+    }
+    const publier = () => racine.style.setProperty('--reserve-panier', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    publier();
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(el);
+    return () => {
+      observateur.disconnect();
+      racine.style.setProperty('--reserve-panier', '0px');
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none">
+    <div ref={zone} className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none">
       <p className="sr-only" aria-live="polite">
         {ajout ? `${ajout.texte}.` : ''}
       </p>

@@ -24,6 +24,9 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
   const [actif, setActif] = useState(0);
   const actifRef = useRef(0);
   const image = useRef(0);
+  const bloc = useRef<HTMLDivElement>(null);
+  const dock = useRef<HTMLDivElement>(null);
+  const repere = useRef<HTMLDivElement>(null);
 
   const placer = useCallback(() => {
     const ul = rail.current;
@@ -73,6 +76,38 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
     };
   }, [placer]);
 
+  // Barre d'action collante : de combien est-elle soulevée au-dessus de sa
+  // place (repère juste après elle) ? Publié en --leve sur le bloc pour
+  // estomper la description qu'elle recouvre, au lieu de la laisser
+  // dépasser dans ses coins arrondis. Mesure au plus une fois par image.
+  useEffect(() => {
+    let attente = 0;
+    const mesurer = () => {
+      attente = 0;
+      const d = dock.current;
+      const r = repere.current;
+      if (!d || !r) return;
+      const leve = Math.max(0, r.getBoundingClientRect().top - d.getBoundingClientRect().bottom);
+      bloc.current?.style.setProperty('--leve', `${Math.round(leve)}px`);
+      // Transition de la barre (apparition du panier) : suivre jusqu'au bout.
+      if (d.getAnimations().length > 0) planifier();
+    };
+    const planifier = () => {
+      if (!attente) attente = requestAnimationFrame(mesurer);
+    };
+    planifier();
+    window.addEventListener('scroll', planifier, { passive: true });
+    window.addEventListener('resize', planifier);
+    const d = dock.current;
+    d?.addEventListener('transitionrun', planifier);
+    return () => {
+      cancelAnimationFrame(attente);
+      window.removeEventListener('scroll', planifier);
+      window.removeEventListener('resize', planifier);
+      d?.removeEventListener('transitionrun', planifier);
+    };
+  }, [actif, produits]);
+
   const centrer = (i: number) => {
     const ul = rail.current;
     const el = ul?.children[i] as HTMLElement | undefined;
@@ -99,7 +134,7 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
   };
 
   return (
-    <div ref={cadre} className="relative isolate">
+    <div ref={cadre} className="plaque-cadre relative isolate">
       {/* La plaque : cercles de pâte qui tournent avec le défilement. */}
       <svg
         aria-hidden
@@ -114,20 +149,20 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
         </g>
       </svg>
 
-      {/* pb-44 / -mb-34 : les crêpes descendent sur l'arc et sortaient de
+      {/* pb-44 / -mb-36 : les crêpes descendent sur l'arc et sortaient de
           la zone visible du rail (overflow-x impose aussi overflow-y).
-          Marge nette inchangée (2,5 rem) ; la scène reste au-dessus. */}
+          Marge nette de 2 rem ; la scène reste au-dessus. */}
       <ul
         ref={rail}
         onScroll={auDefilement}
         aria-label={libelle}
-        className="plaque-tour relative flex overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none pt-8 pb-44 -mb-34 px-[calc(50%-min(26vw,7rem))] sm:px-[calc(50%-8rem)]"
+        className="plaque-tour relative flex overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none pt-6 pb-44 -mb-36 px-[calc(50%-var(--plaque)/2)] sm:px-[calc(50%-8rem)]"
       >
         {produits.map((prod, i) => {
           const ko = estEpuise(prod);
           const centre = i === actif;
           return (
-            <li key={prod.id} className="snap-center shrink-0 w-[min(52vw,14rem)] sm:w-64 flex justify-center">
+            <li key={prod.id} className="snap-center shrink-0 w-[var(--plaque)] sm:w-64 flex justify-center">
               <button
                 type="button"
                 onClick={() => (centre ? agir() : centrer(i))}
@@ -177,7 +212,7 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
             <p className="text-sm text-kc-brume tabular-nums">
               {actif + 1} sur {produits.length}
             </p>
-            <h3 className="mt-1 text-[1.6rem] leading-tight font-extrabold text-kc-beurre text-balance">{p.nom}</h3>
+            <h3 className="titre-recette mt-1 text-[1.6rem] leading-tight font-extrabold text-kc-beurre text-balance">{p.nom}</h3>
           </div>
           <button
             type="button"
@@ -190,30 +225,43 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
           </button>
         </div>
 
-        <div key={`${p.id}-d`} className="kc-apparait text-center">
-          {p.description && <p className="mt-2 text-kc-brume leading-relaxed line-clamp-2 min-h-[3.2em]">{p.description}</p>}
-          <p className="mt-3 flex items-baseline justify-center gap-3">
-            <span className="prix text-3xl text-kc-caramel">{prixF(p.prix)}</span>
-            {restant && <span className="text-sm font-semibold text-kc-beurre">Plus que {restant}</span>}
-          </p>
-        </div>
+        {/* Bloc de repli de la barre d'action : un élément collant ne sort pas
+            de son parent, elle peut donc recouvrir la description mais jamais
+            le titre de la recette. L'espacement est un padding de la
+            description (pb-4), pas une marge de la barre : elle peut ainsi
+            remonter jusqu'au bas du titre. */}
+        <div ref={bloc}>
+          <div key={`${p.id}-d`} className="kc-apparait sous-dock text-center pb-4">
+            {p.description && <p className="mt-2 text-kc-brume leading-relaxed line-clamp-2 min-h-[3.2em]">{p.description}</p>}
+            {restant && <p className="mt-1 text-sm font-semibold text-kc-beurre">Plus que {restant}</p>}
+          </div>
 
-        <button
-          type="button"
-          onClick={agir}
-          disabled={epuise}
-          className="appui mt-4 w-full rounded-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 flex items-center justify-center gap-2 disabled:bg-kc-brume/20 disabled:text-kc-brume"
-        >
-          {epuise ? (
-            'Épuisé pour le moment'
-          ) : aComposer ? (
-            'Composer cette crêpe'
-          ) : (
-            <>
-              <Plus className="w-5 h-5" strokeWidth={2.6} /> Ajouter au panier
-            </>
-          )}
-        </button>
+          {/* Prix et action de la recette, collés au-dessus de la barre panier
+              (dock-recette, globals.css) : pendant le défilement, ils ne
+              passent jamais dessous, quelle que soit la hauteur de l'écran. */}
+          <div ref={dock} className="dock-recette sticky z-10 flex items-center gap-3 rounded-full bg-kc-nuit/95 p-1.5 pl-5 ring-1 ring-kc-beurre/10 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.6)]">
+            <span key={`${p.id}-prix`} className="kc-apparait prix shrink-0 text-2xl max-[379px]:text-xl text-kc-caramel">
+              {prixF(p.prix)}
+            </span>
+            <button
+              type="button"
+              onClick={agir}
+              disabled={epuise}
+              className="appui flex-1 min-w-0 rounded-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base max-[379px]:text-[0.95rem] leading-tight text-balance px-4 py-3.5 flex items-center justify-center gap-2 disabled:bg-kc-brume/20 disabled:text-kc-brume"
+            >
+              {epuise ? (
+                'Épuisé pour le moment'
+              ) : aComposer ? (
+                'Composer cette crêpe'
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" strokeWidth={2.6} /> Ajouter au panier
+                </>
+              )}
+            </button>
+          </div>
+          <div ref={repere} aria-hidden />
+        </div>
       </div>
     </div>
   );

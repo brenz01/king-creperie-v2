@@ -23,11 +23,15 @@ export const journal = async (): Promise<{
 export const tousLesJours = (plages: Array<{ ouvre: string; ferme: string }>) =>
   Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((j) => [String(j), plages]));
 
-/** Horaires où la boutique est fermée maintenant et ouvre dans 2 h (heure de Dakar = UTC). */
+/** Horaires où la boutique est fermée maintenant et ouvre dans 2 h, ou 3 h si ce serait minuit (heure de Dakar = UTC). */
 export function horairesFermesMaintenant() {
   const h = new Date().getUTCHours();
   const hh = (x: number) => `${String(x % 24).padStart(2, '0')}:00`;
-  return tousLesJours([{ ouvre: hh(h + 2), ferme: hh(h + 5) }]);
+  // Entre 22 h et 23 h, « dans 2 h » tombe à 00:00, que formatHeure écrit
+  // « minuit » (et non « 0 h ») : on ouvre alors dans 3 h, pour que la
+  // prochaine ouverture soit toujours une heure chiffrée, à toute heure.
+  const ouvre = (h + 2) % 24 === 0 ? h + 3 : h + 2;
+  return tousLesJours([{ ouvre: hh(ouvre), ferme: hh(h + 5) }]);
 }
 
 // Session staff factice : supabase-js la lit dans localStorage sans

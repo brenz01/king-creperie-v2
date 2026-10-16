@@ -29,11 +29,11 @@ export function AvisFermeture() {
   const { etat } = useBoutique();
   if (!etat || etat.ouvert) return null;
   return (
-    <div role="status" className="mt-5 max-w-xl rounded-2xl bg-kc-beurre text-kc-encre p-4 flex gap-3">
-      <Clock className="w-5 h-5 shrink-0 mt-0.5 text-kc-indigo" />
+    <div role="status" className="mt-5 max-w-xl rounded-2xl bg-kc-indigo text-kc-beurre p-4 flex gap-3">
+      <Clock className="w-5 h-5 shrink-0 mt-0.5 text-kc-caramel" />
       <div>
         <p className="font-semibold">{phraseFermeture(etat)}</p>
-        <p className="text-sm text-kc-encre/70 mt-1">Vous pouvez déjà regarder la carte et préparer votre panier.</p>
+        <p className="text-sm text-kc-brume mt-1">Vous pouvez déjà regarder la carte et préparer votre panier.</p>
       </div>
     </div>
   );

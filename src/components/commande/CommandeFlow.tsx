@@ -100,6 +100,10 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
   const [erreur, setErreur] = useState<{ type: 'reseau' | 'validation' | 'serveur'; texte: string } | null>(null);
   const [commande, setCommande] = useState<ReponseCommande | null>(null);
   const [waOuvert, setWaOuvert] = useState(false);
+  const [precisions, setPrecisions] = useState(() => {
+    const f0 = lireFormulaire();
+    return !!(f0.note || f0.creneau);
+  });
   const cleIdempotence = useRef<string>(genererUuid());
   const envoiEnCours = useRef(false);
   const haut = useRef<HTMLDivElement>(null);
@@ -220,7 +224,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
           </span>
           <h2 className="font-display text-3xl mt-4">Dernière étape</h2>
           <p className="mt-2 text-kc-encre/75 leading-relaxed max-w-sm mx-auto">
-            Votre demande est prête. Envoyez le message dans WhatsApp pour que nous puissions confirmer votre commande.
+            Plus qu’un geste : envoyez le récapitulatif sur WhatsApp, et nous vous confirmons la commande tout de suite.
           </p>
         </div>
 
@@ -298,7 +302,9 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
       </div>
       <div className="flex justify-between">
         <dt className="text-kc-encre/70">Livraison{quartier ? ` à ${quartier.nom}` : ''}</dt>
-        <dd className="prix">{zone ? f(zone.prix) : `de ${f(FRAIS_MIN)} à ${f(FRAIS_MAX)}`}</dd>
+        <dd className={zone ? 'prix' : 'text-sm text-kc-encre/60 text-right'}>
+          {zone ? f(zone.prix) : `selon le quartier, ${f(FRAIS_MIN)} à ${f(FRAIS_MAX)}`}
+        </dd>
       </div>
       <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-kc-encre/10">
         <dt className="font-semibold">{zone ? 'Total à payer' : 'Total hors livraison'}</dt>
@@ -308,13 +314,47 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
     </dl>
   );
 
+  // Le quartier se choisit dès le panier : le client voit son total exact
+  // avant de remplir quoi que ce soit.
+  const choixQuartier = (
+    <div>
+      <label htmlFor="quartier" className={etiquette}>
+        Livrer à
+      </label>
+      <select id="quartier" required value={form.quartier} onChange={changer('quartier')} className={champ}>
+        <option value="" disabled>
+          Choisissez votre quartier
+        </option>
+        {QUARTIERS.map((q) => (
+          <option key={q.nom} value={q.nom}>
+            {q.nom} : livraison {f(trouverZone(q.zoneId)!.prix)}
+          </option>
+        ))}
+        <option value="autre">Mon quartier n&apos;est pas dans la liste</option>
+      </select>
+      {horsZone && (
+        <p className="mt-2 text-sm">
+          Nous ne livrons pas encore dans ce quartier.{' '}
+          <a
+            href={urlContactWhatsApp()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-kc-bissap underline"
+          >
+            Écrivez-nous sur WhatsApp pour vérifier.
+          </a>
+        </p>
+      )}
+    </div>
+  );
+
   // ---------------------------------------------------------------- 1
   if (etape === 'panier') {
     return (
       <div ref={haut} className="flex flex-col gap-5">
         <div>
           <h2 className="font-display text-3xl">Votre panier</h2>
-          <p className="text-kc-encre/70 mt-1">Vérifiez votre commande avant de continuer.</p>
+          <p className="text-kc-encre/70 mt-1">Vérifiez votre commande et choisissez votre quartier.</p>
         </div>
 
         {majPanier && (
@@ -339,7 +379,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
                         type="button"
                         aria-label="Une de moins"
                         onClick={() => updateQuantity(cle, -1)}
-                        className="w-10 h-10 flex items-center justify-center"
+                        className="w-11 h-11 flex items-center justify-center"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -350,7 +390,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
                         type="button"
                         aria-label="Une de plus"
                         onClick={() => updateQuantity(cle, 1)}
-                        className="w-10 h-10 flex items-center justify-center"
+                        className="w-11 h-11 flex items-center justify-center"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -371,7 +411,10 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
           })}
         </ul>
 
-        {recap}
+        <div className="bg-white rounded-3xl border border-kc-encre/10 p-4 space-y-4">
+          {choixQuartier}
+          {recap}
+        </div>
 
         {ferme && etatBoutique && (
           <div role="status" className="bg-kc-beurre rounded-2xl p-4 flex gap-3">
@@ -388,10 +431,10 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
         <button
           type="button"
           onClick={() => allerA('livraison')}
-          disabled={ferme}
+          disabled={ferme || !zone}
           className="bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 rounded-full transition-colors disabled:opacity-50 disabled:hover:bg-kc-bissap"
         >
-          {ferme ? 'Commandes fermées pour le moment' : 'Passer à la livraison'}
+          {ferme ? 'Commandes fermées pour le moment' : zone ? 'Passer à la livraison' : 'Choisissez votre quartier'}
         </button>
         {mode === 'panneau' && (
           <button type="button" onClick={onFermer} className="text-kc-encre/70 font-semibold py-1">
@@ -417,35 +460,15 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
           <h2 className="font-display text-3xl mt-2">Où vous livre-t-on ?</h2>
         </div>
 
-        <div>
-          <label htmlFor="quartier" className={etiquette}>
-            Quartier
-          </label>
-          <select id="quartier" required value={form.quartier} onChange={changer('quartier')} className={champ}>
-            <option value="" disabled>
-              Choisissez votre quartier
-            </option>
-            {QUARTIERS.map((q) => (
-              <option key={q.nom} value={q.nom}>
-                {q.nom} : livraison {f(trouverZone(q.zoneId)!.prix)}
-              </option>
-            ))}
-            <option value="autre">Mon quartier n&apos;est pas dans la liste</option>
-          </select>
-          {horsZone && (
-            <p className="mt-2 text-sm">
-              Nous ne livrons pas encore dans ce quartier.{' '}
-              <a
-                href={urlContactWhatsApp()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-kc-bissap underline"
-              >
-                Écrivez-nous sur WhatsApp pour vérifier.
-              </a>
-            </p>
-          )}
-        </div>
+        <p className="flex items-center justify-between gap-3 rounded-2xl bg-white border border-kc-encre/10 px-4 py-3 text-sm">
+          <span>
+            Livraison à <span className="font-semibold">{quartier?.nom ?? '…'}</span>
+            {zone && <span className="text-kc-encre/60"> : {f(zone.prix)}</span>}
+          </span>
+          <button type="button" onClick={() => allerA('panier')} className="font-semibold text-kc-indigo underline shrink-0">
+            Modifier
+          </button>
+        </p>
 
         <fieldset disabled={!zone} className={`flex flex-col gap-5 transition-opacity ${zone ? '' : 'opacity-40'}`}>
           <div>
@@ -510,32 +533,44 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
               className={champ}
             />
           </div>
-          <div>
-            <label htmlFor="note" className={etiquette}>
-              Précision pour le livreur <span className="font-normal text-kc-encre/50">(facultatif)</span>
-            </label>
-            <input
-              id="note"
-              maxLength={60}
-              placeholder="Appeler en arrivant…"
-              value={form.note}
-              onChange={changer('note')}
-              className={champ}
-            />
-          </div>
-          <div>
-            <label htmlFor="creneau" className={etiquette}>
-              Pour quand ? <span className="font-normal text-kc-encre/50">(facultatif)</span>
-            </label>
-            <input
-              id="creneau"
-              maxLength={60}
-              placeholder="Dès que possible, ou 20 h 30…"
-              value={form.creneau}
-              onChange={changer('creneau')}
-              className={champ}
-            />
-          </div>
+          {precisions ? (
+            <>
+              <div>
+                <label htmlFor="note" className={etiquette}>
+                  Précision pour le livreur <span className="font-normal text-kc-encre/50">(facultatif)</span>
+                </label>
+                <input
+                  id="note"
+                  maxLength={60}
+                  placeholder="Appeler en arrivant…"
+                  value={form.note}
+                  onChange={changer('note')}
+                  className={champ}
+                />
+              </div>
+              <div>
+                <label htmlFor="creneau" className={etiquette}>
+                  Pour quand ? <span className="font-normal text-kc-encre/50">(facultatif)</span>
+                </label>
+                <input
+                  id="creneau"
+                  maxLength={60}
+                  placeholder="Dès que possible, ou 20 h 30…"
+                  value={form.creneau}
+                  onChange={changer('creneau')}
+                  className={champ}
+                />
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPrecisions(true)}
+              className="self-start text-sm font-semibold text-kc-indigo underline py-1"
+            >
+              Ajouter une précision ou une heure de livraison
+            </button>
+          )}
         </fieldset>
 
         <div className="bg-white rounded-3xl border border-kc-encre/10 p-5">{recap}</div>

@@ -47,7 +47,7 @@ export default function HeroSection() {
             </a>
             <Link
               href="/suivi"
-              className="inline-flex items-center border border-kc-beurre/40 hover:border-kc-beurre text-kc-beurre font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
+              className="inline-flex items-center border border-kc-beurre/70 hover:border-kc-beurre text-kc-beurre font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
             >
               Suivre ma commande
             </Link>

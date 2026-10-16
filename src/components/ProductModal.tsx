@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import type { Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
 import { useCart } from '@/context/CartContext';
-import { motion } from 'framer-motion';
+import { motion, useDragControls } from 'framer-motion';
 import { X, Plus, Minus, Check, Share2 } from 'lucide-react';
-import { afficherToast } from '@/lib/toast';
+import { confirmerAjout } from '@/lib/toast';
 import { urlPartage } from '@/lib/whatsapp';
 import Image from 'next/image';
 
@@ -22,6 +22,10 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
   const { addToCart } = useCart();
   const [selection, setSelection] = useState<Extra[]>([]);
   const [quantite, setQuantite] = useState(1);
+  // Fermer en tirant la feuille vers le bas, depuis la crêpe ou la poignée
+  // (pas depuis la liste, qui doit pouvoir défiler).
+  const tirer = useDragControls();
+  const saisir = (e: React.PointerEvent) => tirer.start(e);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -51,9 +55,9 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
         prixBase: produit.prix,
         extrasChoisis: selection.map((s) => ({ id: s.id, nom: s.nom, prix: s.prix })),
       },
-      quantite
+      quantite,
     );
-    afficherToast(quantite > 1 ? `${quantite} crêpes ajoutées au panier.` : 'Crêpe ajoutée au panier.');
+    confirmerAjout(quantite > 1 ? `${quantite} crêpes ajoutées` : 'Crêpe ajoutée');
     onClose();
   };
 
@@ -83,6 +87,14 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
         role="dialog"
         aria-modal="true"
         aria-labelledby="titre-produit"
+        drag="y"
+        dragControls={tirer}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.7 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 110 || info.velocity.y > 650) onClose();
+        }}
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', damping: 30, stiffness: 320 }}
@@ -90,16 +102,30 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
         className="relative w-full sm:max-w-md bg-kc-lait text-kc-encre rounded-t-[2rem] sm:rounded-[2rem] mt-28 max-h-[calc(100dvh-7rem)] flex flex-col"
       >
         {/* La crêpe qui déborde */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-kc-nuit p-2.5 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)]">
+        <div
+          onPointerDown={saisir}
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-kc-nuit p-2.5 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] touch-none"
+        >
           <div className="relative w-full h-full rounded-full overflow-hidden">
-            {produit.image_url && <Image src={produit.image_url} alt="" fill unoptimized sizes="192px" className="object-cover" />}
+            {produit.image_url && (
+              <Image src={produit.image_url} alt="" fill unoptimized sizes="192px" className="object-cover" />
+            )}
           </div>
+        </div>
+
+        {/* Poignée : tirer vers le bas pour fermer (mobile). */}
+        <div
+          onPointerDown={saisir}
+          aria-hidden
+          className="sm:hidden absolute top-0 inset-x-0 h-24 touch-none flex justify-center pt-2.5"
+        >
+          <span className="w-10 h-1.5 rounded-full bg-kc-encre/15" />
         </div>
 
         <button
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-kc-encre/5 hover:bg-kc-encre/10 flex items-center justify-center"
+          className="absolute top-4 right-4 w-11 h-11 rounded-full bg-kc-encre/5 hover:bg-kc-encre/10 flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -143,7 +169,9 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
                     >
                       {actif ? <Check className="w-4 h-4" strokeWidth={3} /> : <Plus className="w-4 h-4" />}
                       {extra.nom}
-                      <span className={`prix ${actif ? 'text-kc-beurre/80' : 'text-kc-encre/55'}`}>+{extra.prix.toLocaleString('fr-FR')} F</span>
+                      <span className={`prix ${actif ? 'text-kc-beurre/80' : 'text-kc-encre/55'}`}>
+                        +{extra.prix.toLocaleString('fr-FR')} F
+                      </span>
                     </button>
                   );
                 })}
@@ -158,16 +186,18 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
                 type="button"
                 aria-label="Une de moins"
                 onClick={() => setQuantite((q) => Math.max(1, q - 1))}
-                className="w-10 h-10 rounded-full hover:bg-kc-encre/5 flex items-center justify-center"
+                className="w-11 h-11 rounded-full hover:bg-kc-encre/5 flex items-center justify-center"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="w-8 text-center font-display text-xl" aria-live="polite">{quantite}</span>
+              <span className="w-8 text-center font-display text-xl" aria-live="polite">
+                {quantite}
+              </span>
               <button
                 type="button"
                 aria-label="Une de plus"
                 onClick={() => setQuantite((q) => Math.min(20, q + 1))}
-                className="w-10 h-10 rounded-full hover:bg-kc-encre/5 flex items-center justify-center"
+                className="w-11 h-11 rounded-full hover:bg-kc-encre/5 flex items-center justify-center"
               >
                 <Plus className="w-4 h-4" />
               </button>

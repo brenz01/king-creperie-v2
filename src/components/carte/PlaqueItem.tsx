@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Check, Plus } from 'lucide-react';
 import type { Produit } from '@/types';
 import { estPersonnalisable } from '@/lib/extras';
-import { afficherToast } from '@/lib/toast';
+import { confirmerAjout } from '@/lib/toast';
 
 interface PlaqueItemProps {
   produit: Produit;
@@ -35,7 +35,7 @@ export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, o
       return;
     }
     onAjouterDirect(produit);
-    afficherToast(`${produit.nom} ajouté au panier.`);
+    confirmerAjout('Ajouté au panier');
     setAjoute(true);
     window.setTimeout(() => setAjoute(false), 1200);
   };
@@ -44,7 +44,7 @@ export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, o
     <li
       className={
         rang
-          ? 'plaque-item snap-center sm:snap-start shrink-0 w-[52vw] max-w-[15rem] sm:w-52 flex flex-col items-center text-center'
+          ? 'plaque-item snap-center sm:snap-start shrink-0 w-[52vw] max-w-[15rem] sm:w-52 lg:w-auto lg:max-w-none flex flex-col items-center text-center'
           : 'flex flex-col items-center text-center'
       }
     >
@@ -59,22 +59,15 @@ export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, o
               ? `${produit.nom}, ${prix} francs CFA. Composer`
               : `${produit.nom}, ${prix} francs CFA. Ajouter au panier`
         }
-        className="relative w-full aspect-square rounded-full disabled:cursor-not-allowed"
+        className={`relative w-full aspect-square rounded-full disabled:cursor-not-allowed ${ajoute ? 'plaque-pop' : ''}`}
       >
         {/* L'assiette */}
-        <span className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_18px_40px_-18px_rgba(0,0,0,0.7)]" />
+        <span className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_22px_40px_-18px_rgba(22,30,69,0.6)]" />
         {/* La crêpe */}
-        <span className={`${rang ? 'plaque-photo ' : ''}absolute inset-[7%] rounded-full overflow-hidden bg-kc-nuit ${epuise ? 'grayscale opacity-50' : ''}`}>
-          {produit.image_url && (
-            <Image
-              src={produit.image_url}
-              alt=""
-              fill
-              unoptimized
-              sizes="240px"
-              className="object-cover"
-            />
-          )}
+        <span
+          className={`${rang ? 'plaque-photo ' : ''}absolute inset-[7%] rounded-full overflow-hidden bg-kc-nuit ${epuise ? 'grayscale opacity-50' : ''}`}
+        >
+          {produit.image_url && <Image src={produit.image_url} alt="" fill unoptimized sizes="240px" className="object-cover" />}
         </span>
 
         {epuise ? (
@@ -84,7 +77,7 @@ export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, o
         ) : (
           <span
             aria-hidden
-            className={`absolute bottom-[4%] right-[4%] ${rang ? 'w-12 h-12' : 'w-10 h-10'} rounded-full flex items-center justify-center shadow-lg transition-colors ${
+            className={`absolute bottom-[4%] right-[4%] ${rang ? 'w-12 h-12' : 'w-11 h-11'} rounded-full flex items-center justify-center shadow-lg transition-colors ${
               ajoute ? 'bg-kc-lait text-kc-encre' : 'bg-kc-bissap text-white'
             }`}
           >
@@ -93,13 +86,13 @@ export default function PlaqueItem({ produit, disposition = 'rang', onChoisir, o
         )}
       </button>
 
-      <p className={`${rang ? 'mt-4 text-base' : 'mt-3 text-[0.95rem]'} px-1 text-kc-beurre font-semibold leading-snug line-clamp-2 min-h-[2.6em]`}>
+      <p
+        className={`${rang ? 'mt-4 text-base' : 'mt-3 text-[0.95rem]'} px-1 text-kc-encre font-semibold leading-snug line-clamp-2 min-h-[2.6em]`}
+      >
         {produit.nom}
       </p>
-      <p className="prix text-xl text-kc-caramel leading-none mt-1.5">{prix} F</p>
-      {stockBas && (
-        <p className="mt-1.5 text-sm font-semibold text-kc-brume">Plus que {produit.stock_quantite}</p>
-      )}
+      <p className="prix text-xl text-kc-bissap leading-none mt-1.5">{prix} F</p>
+      {stockBas && <p className="mt-1.5 text-sm font-semibold text-kc-encre/60">Plus que {produit.stock_quantite}</p>}
     </li>
   );
 }

@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui'],
     orientation: 'portrait',
-    background_color: '#FBF3E7',
-    theme_color: '#FBF3E7',
+    background_color: '#1f2a5c',
+    theme_color: '#1f2a5c',
     categories: ['food', 'shopping', 'lifestyle'],
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
     shortcuts: [
-      { name: 'Voir la carte', short_name: 'Carte', url: '/?source=pwa-shortcut#menu', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Voir la carte', short_name: 'Carte', url: '/?source=pwa-shortcut#carte', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
       { name: 'Suivre ma commande', short_name: 'Suivi', url: '/suivi?source=pwa-shortcut', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
     ],
   };

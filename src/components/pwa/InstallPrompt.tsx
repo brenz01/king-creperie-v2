@@ -34,22 +34,26 @@ export default function InstallPrompt({ contexte = 'suivi' }: { contexte?: 'suiv
 
   const accroche =
     contexte === 'suivi'
-      ? 'Installez King Crêperie pour suivre vos commandes et recevoir une notification quand le livreur part.'
-      : 'Commandez en 2 touches depuis votre écran d’accueil — sans passer par un store.';
+      ? 'Ajoutez King Crêperie à votre écran d’accueil pour suivre vos commandes et être prévenu quand le livreur part.'
+      : 'Retrouvez la carte depuis votre écran d’accueil, sans passer par un store.';
 
   return (
     <div className="relative bg-kc-indigo text-kc-beurre rounded-2xl p-5 shadow-lg">
-      <button onClick={fermer} aria-label="Plus tard" className="absolute top-3 right-3 p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-white/10">
+      <button
+        onClick={fermer}
+        aria-label="Plus tard"
+        className="absolute top-3 right-3 p-2 rounded-full text-kc-beurre/70 hover:text-kc-beurre hover:bg-white/10"
+      >
         <X className="w-4 h-4" />
       </button>
       <div className="flex items-start gap-3 pr-6">
-        <div className="bg-kc-indigo p-2.5 rounded-xl shrink-0">
+        <div className="bg-white/10 p-2.5 rounded-full shrink-0">
           <Smartphone className="w-5 h-5" />
         </div>
         <div className="space-y-3">
           <div>
-            <p className="font-serif text-lg font-semibold">Ajouter l’app sur votre téléphone</p>
-            <p className="text-sm text-stone-300 mt-1">{accroche}</p>
+            <p className="font-display text-xl leading-tight">Gardez la crêperie sous la main</p>
+            <p className="text-sm text-kc-brume mt-1.5 leading-relaxed">{accroche}</p>
           </div>
           {etat.mode === 'android' ? (
             <button
@@ -57,16 +61,16 @@ export default function InstallPrompt({ contexte = 'suivi' }: { contexte?: 'suiv
                 const ok = await etat.installer();
                 if (!ok) fermer();
               }}
-              className="inline-flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-bold text-sm px-4 py-2.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-sm px-5 py-3 rounded-full transition-colors"
             >
               <Download className="w-4 h-4" />
-              Installer l’app
+              Ajouter à l’écran d’accueil
             </button>
           ) : (
-            <ol className="text-sm text-stone-200 space-y-1.5">
+            <ol className="text-sm text-kc-brume space-y-1.5">
               <li className="flex items-center gap-2">
                 <span className="text-kc-caramel font-bold">1.</span> Touchez
-                <Share className="w-4 h-4 inline text-sky-400" aria-label="Partager" />
+                <Share className="w-4 h-4 inline text-kc-caramel" aria-label="Partager" />
                 <span className="font-semibold">Partager</span> dans Safari
               </li>
               <li className="flex items-center gap-2">

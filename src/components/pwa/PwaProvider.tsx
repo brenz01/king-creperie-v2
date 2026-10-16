@@ -21,7 +21,7 @@ function BandeauHorsLigne() {
   return (
     <div role="status" className="fixed top-0 inset-x-0 z-[60] bg-kc-nuit text-kc-beurre text-xs font-medium py-1.5 px-4 flex items-center justify-center gap-2 pt-[max(0.375rem,env(safe-area-inset-top))]">
       <WifiOff className="w-3.5 h-3.5" />
-      Hors ligne — la carte reste consultable, la commande nécessite une connexion.
+      Pas de connexion. La carte reste consultable, la commande attendra le retour du réseau.
     </div>
   );
 }
@@ -52,14 +52,14 @@ function ToastMiseAJour() {
 
   if (!disponible) return null;
   return (
-    <div role="status" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-11/12 max-w-sm bg-white border border-stone-200 shadow-xl rounded-xl p-4 flex items-center justify-between gap-3">
-      <p className="text-sm text-stone-700">Une nouvelle version de l’app est disponible.</p>
+    <div role="status" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-11/12 max-w-sm bg-kc-nuit text-kc-beurre shadow-[0_12px_40px_-10px_rgba(0,0,0,0.6)] rounded-2xl p-4 flex items-center justify-between gap-3">
+      <p className="text-sm">Une nouvelle version est prête.</p>
       <button
         onClick={() => {
           majDemandee.current = true;
           serwist?.messageSkipWaiting();
         }}
-        className="inline-flex items-center gap-1.5 bg-kc-bissap hover:bg-kc-bissap-fonce text-white text-xs font-bold px-3 py-2 rounded-full shrink-0"
+        className="inline-flex items-center gap-1.5 bg-kc-caramel hover:bg-kc-beurre text-kc-nuit text-sm font-semibold px-4 py-2 rounded-full shrink-0"
       >
         <RefreshCw className="w-3.5 h-3.5" /> Mettre à jour
       </button>

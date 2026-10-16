@@ -16,3 +16,11 @@ export function urlContactWhatsApp(): string {
 export function urlPartage(texte: string): string {
   return `https://wa.me/?text=${encodeURIComponent(texte)}`;
 }
+
+// Lien WhatsApp vers le numéro d'un client (format sénégalais à 9
+// chiffres complété avec l'indicatif 221).
+export function urlWhatsAppClient(telephone: string, texte?: string): string {
+  const chiffres = telephone.replace(/\D/g, '');
+  const numero = chiffres.length === 9 ? `221${chiffres}` : chiffres.replace(/^00/, '');
+  return `https://wa.me/${numero}${texte ? `?text=${encodeURIComponent(texte)}` : ''}`;
+}

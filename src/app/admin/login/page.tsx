@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
       });
 
       if (sessionError) {
-        setError('Erreur lors de la connexion.');
+        setError('Connexion impossible. Réessayez.');
         setLoading(false);
         return;
       }
@@ -46,51 +46,63 @@ export default function AdminLoginPage() {
       router.push('/admin/dashboard');
     } catch (err) {
       console.error('Erreur login:', err);
-      setError('Erreur de connexion. Réessayez.');
+      setError('Pas de réponse du serveur. Vérifiez la connexion puis réessayez.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-16 px-6 flex items-center justify-center bg-[#1C1712]">
-      <div className="bg-[#26201A] border border-[#3D332A] p-8 rounded-2xl w-full max-w-md shadow-xl">
-        <div className="text-center mb-6">
-          <Crown className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-          <h1 className="font-serif text-2xl font-semibold text-white">Espace Admin</h1>
-          <p className="text-stone-400 text-sm">Gestion des commandes King Crêperie</p>
+    <div className="min-h-[100dvh] bg-kc-nuit text-kc-beurre px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-12 flex items-center justify-center">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Crown className="w-10 h-10 text-kc-caramel mx-auto" strokeWidth={2.4} />
+          <h1 className="mt-3 font-display text-3xl leading-none">KC Staff</h1>
+          <p className="mt-2 text-sm text-kc-brume/80">Commandes de King Crêperie, en direct.</p>
         </div>
 
         {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 rounded-xl mb-4 text-xs text-center font-medium">
+          <div
+            role="alert"
+            className="mb-4 rounded-2xl bg-kc-bissap/15 border border-kc-bissap/40 text-kc-beurre px-4 py-3 text-sm"
+          >
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase text-stone-400 mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-semibold mb-1.5">
+              Email
+            </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-brume/50 w-4 h-4" />
               <input
+                id="email"
                 type="email"
+                autoComplete="username"
+                inputMode="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#1C1712] border border-[#3D332A] rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-white/5 border border-white/15 rounded-2xl py-3.5 pl-11 pr-4 text-base text-kc-lait placeholder:text-kc-brume/40 focus:outline-none focus:border-kc-caramel transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase text-stone-400 mb-1">Mot de passe</label>
+            <label htmlFor="password" className="block text-sm font-semibold mb-1.5">
+              Mot de passe
+            </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-brume/50 w-4 h-4" />
               <input
+                id="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#1C1712] border border-[#3D332A] rounded-xl py-2.5 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-white/5 border border-white/15 rounded-2xl py-3.5 pl-11 pr-4 text-base text-kc-lait focus:outline-none focus:border-kc-caramel transition-colors"
               />
             </div>
           </div>
@@ -98,9 +110,9 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all mt-2 shadow-md shadow-amber-600/20 active:scale-95 disabled:opacity-50"
+            className="w-full bg-kc-caramel hover:bg-kc-beurre text-kc-nuit font-semibold py-4 rounded-full transition-colors mt-2 disabled:opacity-50"
           >
-            {loading ? 'Connexion...' : 'Se connecter'}
+            {loading ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
       </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 // Espace staff : jamais indexé. (La protection réelle des données
 // reste la RLS côté Supabase ; ceci évite juste l'exposition SEO.)
@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   manifest: '/admin.webmanifest',
   appleWebApp: { capable: true, title: 'KC Staff', statusBarStyle: 'black-translucent' },
 };
+
+export const viewport: Viewport = { themeColor: '#161e45' };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;

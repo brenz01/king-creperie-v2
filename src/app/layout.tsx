@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#FBF3E7',
+  themeColor: '#1f2a5c',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -46,7 +46,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${onest.variable} ${bagel.variable}`}>
-      <body className="bg-brand-cream text-brand-chocolate font-sans antialiased selection:bg-amber-600 selection:text-white min-h-screen">
+      <body className="bg-brand-cream text-brand-chocolate font-sans antialiased selection:bg-kc-caramel selection:text-kc-nuit min-h-screen">
         <PwaProvider>
           <CartProvider>
             <SmoothScrollProvider>

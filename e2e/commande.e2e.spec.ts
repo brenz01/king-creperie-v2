@@ -21,11 +21,11 @@ test('commande de bout en bout', async ({ page, context }) => {
   // « Tout voir » : la rubrique passe en grille, puis revient en rangée.
   await page.locator('#carte-sucree').getByRole('button', { name: 'Tout voir' }).click();
   await expect(page.locator('#carte-sucree ul.grid li')).toHaveCount(7);
-  await page.locator('#carte-sucree').getByRole('button', { name: 'Faire défiler' }).click();
+  await page.locator('#carte-sucree').getByRole('button', { name: 'Afficher en rangée' }).click();
 
-  // Boisson : ajout direct.
+  // Boisson : ajout direct, confirmé dans la barre panier.
   await page.locator('#carte-boisson li button').first().click();
-  await expect(page.getByText('ajouté au panier.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Voir mon panier/ })).toContainText('Ajouté au panier, 1 article');
 
   // Crêpe : fiche, extras facultatifs, aucun présélectionné.
   await page.locator('#carte-salee li button').first().click();
@@ -35,7 +35,7 @@ test('commande de bout en bout', async ({ page, context }) => {
   await expect(fiche.getByRole('button', { name: 'Partager cette crêpe' })).toBeVisible();
   await fiche.getByRole('button', { name: /Double fromage/ }).click();
   await fiche.getByRole('button', { name: /Ajouter au panier/ }).click();
-  await expect(page.getByText('Crêpe ajoutée au panier.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Voir mon panier/ })).toContainText('Crêpe ajoutée, 2 articles');
 
   // Panneau panier sur la même page.
   const barre = page.getByRole('button', { name: /Voir mon panier/ });
@@ -44,11 +44,14 @@ test('commande de bout en bout', async ({ page, context }) => {
   const panneau = page.getByRole('dialog', { name: 'Votre commande' });
   await expect(panneau).toBeVisible();
   expect(new URL(page.url()).pathname).toBe('/');
-  await expect(panneau).toContainText(/de 1\s000 F à 2\s000 F/);
+  await expect(panneau).toContainText(/selon le quartier, 1\s000 F à 2\s000 F/);
 
-  await panneau.getByRole('button', { name: 'Passer à la livraison' }).click();
+  // Quartier choisi dès le panier : total exact avant le formulaire.
+  await expect(panneau.getByRole('button', { name: 'Choisissez votre quartier' })).toBeDisabled();
   await page.selectOption('#quartier', 'Mermoz');
   await expect(panneau).toContainText('Livraison à Mermoz');
+  await expect(panneau).toContainText(/Total à payer\s*4\s500 F/);
+  await panneau.getByRole('button', { name: 'Passer à la livraison' }).click();
   await page.fill('#nom', 'Awa Ndiaye');
   await page.fill('#tel', '12 34');
   await page.fill('#adresse', 'Villa 12, rue MZ-40');
@@ -57,9 +60,9 @@ test('commande de bout en bout', async ({ page, context }) => {
   // Fermer puis rouvrir : le formulaire est conservé.
   await panneau.getByRole('button', { name: 'Fermer le panier' }).click();
   await page.getByRole('button', { name: /Voir mon panier/ }).click();
+  await expect(page.locator('#quartier')).toHaveValue('Mermoz');
   await page.getByRole('dialog', { name: 'Votre commande' }).getByRole('button', { name: 'Passer à la livraison' }).click();
   await expect(page.locator('#nom')).toHaveValue('Awa Ndiaye');
-  await expect(page.locator('#quartier')).toHaveValue('Mermoz');
 
   // Téléphone invalide refusé par le serveur, puis commande acceptée.
   await panneau.getByRole('button', { name: 'Valider ma commande' }).click();

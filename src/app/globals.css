@@ -77,9 +77,9 @@
    la supporte et si l'utilisateur n'a pas demandé moins de mouvement.
    ------------------------------------------------------------------ */
 @keyframes plaque-item {
-  0%   { transform: scale(0.84); opacity: 0.5; }
+  0%   { transform: scale(0.84); opacity: 0.8; }
   50%  { transform: scale(1);    opacity: 1; }
-  100% { transform: scale(0.84); opacity: 0.5; }
+  100% { transform: scale(0.84); opacity: 0.8; }
 }
 @keyframes plaque-photo {
   0%   { transform: rotate(-16deg); }
@@ -102,7 +102,32 @@
     @media (min-width: 640px) {
       .plaque-item { animation: none; }
     }
+    /* Sur ordinateur la carte est une grille : plus de rotation. */
+    @media (min-width: 1024px) {
+      .plaque-photo { animation: none; }
+    }
   }
+}
+
+/* Ajout au panier : la crêpe « saute » sur la plaque, avec un halo
+   caramel, le temps d'un battement. */
+@keyframes plaque-pop {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgb(242 169 59 / 0); }
+  35%  { transform: scale(1.07); box-shadow: 0 0 0 10px rgb(242 169 59 / 0.35); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 18px rgb(242 169 59 / 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .plaque-pop { animation: plaque-pop 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+}
+
+/* Barre panier : petit rebond quand un article arrive. */
+@keyframes barre-rebond {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-6px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .barre-rebond { animation: barre-rebond 420ms ease-out; }
 }
 
 .bg-brand-cream { background-color: var(--bg-primary); }

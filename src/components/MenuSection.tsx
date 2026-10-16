@@ -57,9 +57,9 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
   const rubriques = useMemo(
     () =>
       RUBRIQUES.map((r) => ({ ...r, produits: trier((produits ?? []).filter((p) => p.categorie === r.categorie)) })).filter(
-        (r) => r.produits.length > 0
+        (r) => r.produits.length > 0,
       ),
-    [produits]
+    [produits],
   );
 
   // Onglet actif = rangée la plus visible à l'écran.
@@ -73,18 +73,20 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
         const visible = entrees.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (visible) setActive(visible.target.id.replace('carte-', '') as CategorieProduit);
       },
-      { rootMargin: '-35% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] }
+      { rootMargin: '-35% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] },
     );
     sections.forEach((s) => obs.observe(s));
     return () => obs.disconnect();
   }, [rubriques]);
 
   return (
-    <section id="carte" className="bg-kc-indigo text-kc-beurre pb-28 scroll-mt-16">
+    // Pas de z-index ici : il créerait un contexte d'empilement et la fiche
+    // produit (rendue dans la section) passerait sous la barre panier.
+    <section id="carte" className="relative -mt-8 rounded-t-[2.5rem] bg-kc-lait text-kc-encre pt-8 pb-28 scroll-mt-16">
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pt-4">
-        <h2 className="font-display text-5xl sm:text-6xl leading-none">La carte</h2>
-        <p className="mt-3 text-kc-brume text-base max-w-md leading-relaxed">
-          Glissez pour parcourir les recettes. Touchez une crêpe pour voir sa garniture et choisir vos extras.
+        <h2 className="font-display text-5xl sm:text-6xl leading-none text-kc-indigo">La carte</h2>
+        <p className="mt-3 text-kc-encre/70 text-base max-w-md leading-relaxed">
+          Glissez pour voir les recettes, touchez une crêpe pour la composer.
         </p>
         <AvisFermeture />
       </div>
@@ -92,7 +94,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
       {rubriques.length > 1 && (
         <nav
           aria-label="Rubriques de la carte"
-          className="sticky top-16 z-30 mt-6 bg-kc-indigo/95 backdrop-blur-md border-b border-white/10"
+          className="sticky top-16 z-30 mt-6 bg-kc-lait/95 backdrop-blur-md border-b border-kc-encre/10"
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-3 flex gap-2 overflow-x-auto scrollbar-none">
             {rubriques.map((r) => (
@@ -102,8 +104,8 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
                 aria-current={active === r.categorie ? 'true' : undefined}
                 className={`shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
                   active === r.categorie
-                    ? 'bg-kc-beurre text-kc-indigo'
-                    : 'text-kc-beurre/80 border border-kc-beurre/25 hover:border-kc-beurre/60'
+                    ? 'bg-kc-indigo text-kc-beurre'
+                    : 'text-kc-indigo border border-kc-indigo/30 hover:border-kc-indigo'
                 }`}
               >
                 {r.court}
@@ -114,7 +116,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
       )}
 
       {produits === null ? (
-        <div className="max-w-6xl mx-auto px-5 py-20 text-center text-kc-beurre/80">
+        <div className="max-w-6xl mx-auto px-5 py-20 text-center text-kc-encre/70">
           {erreur ? (
             <p>La carte ne charge pas. Vérifiez votre connexion puis rechargez la page.</p>
           ) : (

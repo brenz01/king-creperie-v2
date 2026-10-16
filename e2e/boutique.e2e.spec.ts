@@ -22,7 +22,8 @@ test('pause du gérant : bandeau, panier bloqué, serveur qui refuse', async ({ 
   await expect(page.locator('#carte')).toContainText('Fermé ce soir, on rouvre demain à 17 h.');
 
   // On peut quand même préparer son panier…
-  await page.locator('#carte-boisson li button').first().click();
+  await page.locator('#carte').getByRole('button', { name: 'Boissons 6' }).click();
+  await page.locator('#carte').getByRole('button', { name: 'Ajouter au panier' }).click();
   await page.getByRole('button', { name: /Voir mon panier/ }).click();
   const panneau = page.getByRole('dialog', { name: 'Votre commande' });
   await expect(panneau).toContainText('Votre panier est gardé sur ce téléphone');

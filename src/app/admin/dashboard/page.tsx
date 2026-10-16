@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimeChannel, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Crown, Loader2, RefreshCw, Store, UtensilsCrossed } from 'lucide-react';
+import { ClipboardList, Crown, Loader2, RefreshCw, Store, UtensilsCrossed, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Commande, Produit, StatutCommande } from '@/types';
 import { etatBoutique, type Boutique } from '@/lib/horaires';
@@ -12,6 +12,7 @@ import VueCommandes from '@/components/staff/VueCommandes';
 import VueCarte from '@/components/staff/VueCarte';
 import VueBoutique, { type LigneAuditLog } from '@/components/staff/VueBoutique';
 import { EN_COURS, useMaintenant } from '@/components/staff/commun';
+import { definirSon, jouerCarillon, sonActif, useSonActive } from '@/lib/staff/son';
 
 // ------------------------------------------------------------------
 // KC Staff. Trois écrans, dans l'ordre du service :
@@ -36,6 +37,7 @@ export default function AdminDashboardPage() {
   const vues = useRef<Set<string> | null>(null);
   const router = useRouter();
   const maintenant = useMaintenant();
+  const son = useSonActive();
 
   const fetchCommandes = useCallback(async () => {
     // Les 200 plus récentes : couvre le service du jour et le bilan.
@@ -53,6 +55,7 @@ export default function AdminDashboardPage() {
         if (arrivees.length > 0) {
           setNouvelles((prev) => new Set([...prev, ...arrivees]));
           navigator.vibrate?.([180, 80, 180]);
+          if (sonActif()) jouerCarillon();
         }
       }
       vues.current = new Set(liste.map((c) => c.id));
@@ -182,6 +185,9 @@ export default function AdminDashboardPage() {
     );
   }
 
+  // Sur grand écran (tablette posée, ordinateur), les commandes passent
+  // en trois colonnes : à lancer, au four, chez le livreur.
+  const largeur = onglet === 'commandes' ? 'max-w-3xl lg:max-w-6xl' : 'max-w-3xl';
   const nbEnCours = commandes.filter((c) => EN_COURS.includes(c.statut)).length;
   const nbALancer = commandes.filter((c) => c.statut === 'recue').length;
   const etat = boutique ? etatBoutique(boutique, new Date(maintenant)) : null;
@@ -212,8 +218,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-[100dvh] bg-kc-nuit text-kc-lait pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-30 bg-kc-nuit/95 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 bg-kc-nuit border-b border-white/10 pt-[env(safe-area-inset-top)]">
+        <div className={`${largeur} mx-auto px-4 h-16 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-2 min-w-0">
             <Crown className="w-6 h-6 text-kc-caramel shrink-0" strokeWidth={2.4} />
             <span className="font-display text-xl text-kc-beurre leading-none">KC Staff</span>
@@ -224,10 +230,19 @@ export default function AdminDashboardPage() {
                 onClick={() => setOnglet('boutique')}
                 className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-kc-beurre"
               >
-                <span className={`w-2 h-2 rounded-full ${etat.ouvert ? 'bg-emerald-400' : 'bg-kc-bissap'}`} aria-hidden />
+                <span className={`w-2 h-2 rounded-full ${etat.ouvert ? 'bg-[#5fd08b]' : 'bg-kc-bissap'}`} aria-hidden />
                 {etat.ouvert ? 'Ouvert' : etat.enPause ? 'En pause' : 'Fermé'}
               </button>
             )}
+            <button
+              onClick={() => definirSon(!son)}
+              aria-pressed={son}
+              aria-label={son ? 'Couper le son des nouvelles commandes' : 'Activer le son des nouvelles commandes'}
+              title={son ? 'Son activé' : 'Son coupé'}
+              className="appui w-11 h-11 rounded-full flex items-center justify-center text-kc-brume hover:bg-white/10"
+            >
+              {son ? <Volume2 className="w-5 h-5 text-kc-caramel" /> : <VolumeX className="w-5 h-5" />}
+            </button>
             <button
               onClick={() => {
                 setActualisation(true);
@@ -242,7 +257,7 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 pt-5">
+      <main className={`${largeur} mx-auto px-4 pt-5`}>
         {erreur && (
           <div
             role="alert"
@@ -279,7 +294,7 @@ export default function AdminDashboardPage() {
       {/* Navigation au pouce. Les pastilles disent où il y a quelque chose à faire. */}
       <nav
         aria-label="Sections"
-        className="fixed bottom-0 inset-x-0 z-30 bg-kc-nuit/95 backdrop-blur-md border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 inset-x-0 z-30 bg-kc-nuit border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
       >
         <div className="max-w-3xl mx-auto grid grid-cols-3">
           {(

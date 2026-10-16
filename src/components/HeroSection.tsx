@@ -1,53 +1,58 @@
 import Link from 'next/link';
+import { Banknote, Bike } from 'lucide-react';
+import PlaqueAccueil from './accueil/PlaqueAccueil';
 import { PastilleBoutique } from './StatutBoutique';
 
-// Accueil : une phrase, une crêpe qui tourne (la vidéo dans un cercle,
-// comme sur la plaque), deux actions. Le cercle annonce la forme de
-// toute la carte en dessous.
+// Accueil asymétrique : le titre en lettrage d'enseigne à gauche, la
+// plaque qui déborde à droite. Les informations pratiques (livraison,
+// paiement, ouverture) sont lisibles sans attendre l'animation.
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-kc-indigo text-kc-beurre pt-16">
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 grid md:grid-cols-[1.1fr_1fr] items-center gap-6 md:gap-10 pt-6 pb-14 md:py-20">
-        {/* La plaque */}
-        <div className="relative order-1 md:order-2 flex justify-end md:justify-center">
-          <div className="relative w-[78vw] max-w-[26rem] md:w-[30rem] md:max-w-none aspect-square -mr-[18vw] md:mr-0">
-            <div className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]" />
-            <div className="absolute inset-[5%] rounded-full overflow-hidden ring-[10px] ring-kc-caramel/25">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                poster="/videos/hero-poster.jpg"
-                aria-hidden="true"
-                className="w-full h-full object-cover scale-110"
-              >
-                <source src="/videos/hero-bg.webm" type="video/webm" />
-                <source src="/videos/hero-bg.mp4" type="video/mp4" />
-              </video>
+    <section aria-labelledby="titre-accueil" className="relative overflow-hidden bg-kc-indigo text-kc-beurre pt-16">
+      <div className="relative max-w-6xl mx-auto px-5 sm:px-6 pt-6 pb-12 md:py-20 md:grid md:grid-cols-[1.15fr_1fr] md:items-center md:gap-10">
+        {/* La plaque, en débord à droite sur téléphone */}
+        <div className="relative md:order-2 h-[min(78vw,22rem)] md:h-auto">
+          <div className="absolute -right-[22vw] -top-2 w-[min(92vw,26rem)] aspect-square md:static md:w-full md:max-w-[30rem] md:mx-auto">
+            <div className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_40px_80px_-30px_rgba(0,0,0,0.7)]" />
+            <div className="absolute inset-[5%]">
+              <PlaqueAccueil />
             </div>
           </div>
         </div>
 
-        <div className="order-2 md:order-1 -mt-10 md:mt-0 relative">
-          <h1 className="font-display text-[2.35rem] leading-[1.04] sm:text-6xl md:text-[4.2rem] md:leading-[0.98] tracking-tight text-balance">
-            Chaude, sortie de la plaque, livrée chez vous.
+        <div className="relative md:order-1 -mt-16 md:mt-0">
+          <h1
+            id="titre-accueil"
+            className="font-display text-[clamp(3.1rem,15vw,6.6rem)] leading-[0.92] tracking-tight max-w-[9ch] md:max-w-none"
+          >
+            Chaude, sortie de la plaque.
           </h1>
-          <p className="mt-5 max-w-md text-base sm:text-lg text-kc-brume leading-relaxed">
-            Crêpes salées, sucrées et jus maison. Préparées aux Almadies, livrées de Ngor au Plateau. Vous payez en espèces à la réception.
+          <p className="mt-5 max-w-[30ch] text-lg leading-relaxed text-kc-brume">
+            Crêpes salées, sucrées et jus maison, préparés minute aux Almadies.
           </p>
+
+          <ul className="mt-5 space-y-2 text-[0.95rem] text-kc-lait">
+            <li className="flex items-center gap-2.5">
+              <Bike className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />
+              Livrées de Ngor au Plateau, de 1 000 à 2 000 F selon le quartier
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Banknote className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />
+              Paiement en espèces à la réception
+            </li>
+          </ul>
           <PastilleBoutique />
-          <div className="mt-6 flex flex-wrap gap-3">
+
+          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
             <a
               href="#carte"
-              className="inline-flex items-center bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
+              className="appui inline-flex items-center bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base px-7 py-4 rounded-full"
             >
-              Choisir mes crêpes
+              Voir la carte
             </a>
             <Link
               href="/suivi"
-              className="inline-flex items-center border border-kc-beurre/70 hover:border-kc-beurre text-kc-beurre font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
+              className="py-2.5 font-semibold text-kc-beurre underline underline-offset-4 decoration-kc-beurre/40 hover:decoration-kc-beurre"
             >
               Suivre ma commande
             </Link>

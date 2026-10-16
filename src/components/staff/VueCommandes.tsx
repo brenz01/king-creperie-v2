@@ -18,6 +18,23 @@ const PASTILLE: Record<StatutCommande, string> = {
   annulee: 'bg-kc-encre/10 text-kc-encre/50 line-through',
 };
 
+// Bord gauche de la carte : l'étape se lit d'un coup d'œil, même de loin.
+const BORD: Record<StatutCommande, string> = {
+  recue: 'border-l-kc-bissap',
+  en_preparation: 'border-l-kc-caramel',
+  en_livraison: 'border-l-kc-indigo',
+  livree: 'border-l-kc-ok',
+  annulee: 'border-l-kc-encre/30',
+};
+
+const POINT: Record<StatutCommande, string> = {
+  recue: 'bg-kc-bissap',
+  en_preparation: 'bg-kc-caramel',
+  en_livraison: 'bg-kc-brume',
+  livree: 'bg-kc-ok',
+  annulee: 'bg-kc-brume/40',
+};
+
 const LIBELLE_COURT: Record<StatutCommande, string> = {
   recue: 'À lancer',
   en_preparation: 'En préparation',
@@ -112,8 +129,47 @@ export default function VueCommandes({ commandes, loading, nouvelles, onStatut, 
             <p className="mt-1 text-sm text-kc-brume/70">Les nouvelles commandes apparaissent ici toutes seules.</p>
           )}
         </div>
+      ) : filtre === 'en_cours' ? (
+        // Groupées par étape : empilées sur téléphone, en colonnes sur
+        // grand écran. La plus ancienne en haut de chaque groupe.
+        <div className="mt-4 flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-4 lg:items-start">
+          {EN_COURS.map((statut) => {
+            const groupe = liste.filter((c) => c.statut === statut);
+            return (
+              <section
+                key={statut}
+                aria-label={`${LIBELLE_COURT[statut]} : ${groupe.length}`}
+                className={groupe.length === 0 ? 'hidden lg:block' : ''}
+              >
+                <h3 className="flex items-center gap-2 mb-2.5 text-sm font-semibold text-kc-brume">
+                  <span className={`w-2.5 h-2.5 rounded-full ${POINT[statut]}`} aria-hidden />
+                  {LIBELLE_COURT[statut]}
+                  <span className="tabular-nums text-kc-brume/60">{groupe.length}</span>
+                </h3>
+                {groupe.length === 0 ? (
+                  <p className="rounded-3xl border border-dashed border-white/15 py-8 text-center text-sm text-kc-brume/50">
+                    Rien ici
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {groupe.map((cmd) => (
+                      <li key={cmd.id}>
+                        <CarteCommande
+                          commande={cmd}
+                          nouvelle={nouvelles.has(cmd.id)}
+                          maintenant={maintenant}
+                          onStatut={onStatut}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+        </div>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {liste.map((cmd) => (
             <li key={cmd.id}>
               <CarteCommande commande={cmd} nouvelle={nouvelles.has(cmd.id)} maintenant={maintenant} onStatut={onStatut} />
@@ -157,10 +213,14 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
   };
 
   return (
+    // key = statut : la carte rejoue une entrée courte quand elle change
+    // d'étape (et de colonne) ; une nouvelle commande reçoit un halo, deux
+    // fois, puis reste simplement encadrée.
     <article
-      className={`rounded-3xl bg-kc-lait text-kc-encre p-4 sm:p-5 ${nouvelle ? 'ring-4 ring-kc-bissap/70' : ''} ${
-        cmd.statut === 'annulee' ? 'opacity-70' : ''
-      }`}
+      key={cmd.statut}
+      className={`kc-apparait rounded-3xl border-l-[6px] ${BORD[cmd.statut]} bg-kc-lait text-kc-encre p-4 sm:p-5 ${
+        nouvelle ? 'kc-surligne ring-4 ring-kc-bissap/70' : ''
+      } ${cmd.statut === 'annulee' ? 'opacity-70' : ''}`}
     >
       <div className="flex items-center justify-between gap-3">
         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${PASTILLE[cmd.statut]}`}>
@@ -228,7 +288,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
         <button
           onClick={() => void agir(suivant.statut)}
           disabled={enCours}
-          className="mt-3 w-full rounded-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+          className="appui mt-3 w-full rounded-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
         >
           {enCours && <Loader2 className="w-4 h-4 animate-spin" />}
           {suivant.action}

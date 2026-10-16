@@ -36,7 +36,7 @@ export default function CommandePanel() {
       {ouvert && (
         <div key="panneau" data-lenis-prevent className="fixed inset-0 z-[60]">
           <motion.div
-            className="absolute inset-0 bg-kc-nuit/60 backdrop-blur-sm hidden sm:block"
+            className="absolute inset-0 bg-kc-nuit/60 hidden sm:block"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

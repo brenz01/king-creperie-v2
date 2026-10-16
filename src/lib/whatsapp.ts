@@ -24,3 +24,12 @@ export function urlWhatsAppClient(telephone: string, texte?: string): string {
   const numero = chiffres.length === 9 ? `221${chiffres}` : chiffres.replace(/^00/, '');
   return `https://wa.me/${numero}${texte ? `?text=${encodeURIComponent(texte)}` : ''}`;
 }
+
+// Numéro de la crêperie, lisible et copiable (secours si WhatsApp ne
+// s'ouvre pas) : « +221 77 833 57 81 ».
+export function numeroCreperieAffiche(): string {
+  const n = NUMERO_WHATSAPP.replace(/\D/g, '');
+  const local = n.startsWith('221') ? n.slice(3) : n;
+  const m = local.match(/^(\d{2})(\d{3})(\d{2})(\d{2})$/);
+  return m ? `+221 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : `+${n}`;
+}

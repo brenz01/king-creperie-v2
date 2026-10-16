@@ -20,7 +20,7 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-kc-indigo/95 backdrop-blur-md text-kc-beurre pt-[env(safe-area-inset-top)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2" onClick={() => setOuvert(false)}>
+        <Link href="/" className="flex items-center gap-2 py-2.5" onClick={() => setOuvert(false)}>
           <Crown className="w-6 h-6 text-kc-caramel" strokeWidth={2.4} />
           <span className="font-display text-xl leading-none tracking-tight">King Crêperie</span>
         </Link>

@@ -55,8 +55,12 @@ export default function AdminLoginPage() {
     <div className="min-h-[100dvh] bg-kc-nuit text-kc-beurre px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-12 flex items-center justify-center">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Crown className="w-10 h-10 text-kc-caramel mx-auto" strokeWidth={2.4} />
-          <h1 className="mt-3 font-display text-3xl leading-none">KC Staff</h1>
+          <span className="mx-auto w-24 h-24 rounded-full bg-kc-indigo flex items-center justify-center shadow-[0_24px_48px_-24px_rgba(0,0,0,0.9)]">
+            <span className="w-16 h-16 rounded-full border-2 border-dashed border-kc-beurre/25 flex items-center justify-center">
+              <Crown className="w-8 h-8 text-kc-caramel" strokeWidth={2.4} />
+            </span>
+          </span>
+          <h1 className="mt-5 font-display text-4xl leading-none">KC Staff</h1>
           <p className="mt-2 text-sm text-kc-brume/80">Commandes de King Crêperie, en direct.</p>
         </div>
 
@@ -110,7 +114,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-kc-caramel hover:bg-kc-beurre text-kc-nuit font-semibold py-4 rounded-full transition-colors mt-2 disabled:opacity-50"
+            className="appui w-full bg-kc-caramel hover:bg-kc-beurre text-kc-nuit font-semibold py-4 rounded-full transition-colors mt-2 disabled:opacity-50"
           >
             {loading ? 'Connexion…' : 'Se connecter'}
           </button>

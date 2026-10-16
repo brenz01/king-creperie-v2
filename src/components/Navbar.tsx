@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Crown, Menu as MenuIcon, X, Download, Share, ShoppingBag } from 'lucide-react';
 import { useInstallation } from '@/lib/pwa/install';
 import { useCart } from '@/context/CartContext';
@@ -11,6 +12,10 @@ export default function Navbar() {
   const [ouvert, setOuvert] = useState(false);
   const installation = useInstallation();
   const { totalCount } = useCart();
+  const pathname = usePathname();
+
+  // L'espace staff a son propre en-tête.
+  if (pathname.startsWith('/admin')) return null;
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-kc-indigo/95 backdrop-blur-md text-kc-beurre pt-[env(safe-area-inset-top)]">

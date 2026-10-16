@@ -25,11 +25,21 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
   const [selection, setSelection] = useState<Extra[]>([]);
   const [quantite, setQuantite] = useState(1);
   const photo = useRef<HTMLDivElement>(null);
+  const feuille = useRef<HTMLDivElement>(null);
   const fermer = useRef<HTMLButtonElement>(null);
   // Fermer en tirant la feuille vers le bas, depuis la plaque ou la poignée
   // (pas depuis la liste, qui doit pouvoir défiler).
   const tirer = useDragControls();
   const saisir = (e: React.PointerEvent) => tirer.start(e);
+
+  // Mobile : la photo déborde de l'en-tête sur le contenu. Au défilement,
+  // elle se replie (échelle 1 → 0,5) jusqu'à tenir dans le morceau de
+  // plaque ; son bas remonte aussi vite que le texte, qui ne passe donc
+  // jamais dessous. Variable CSS, aucun rendu React.
+  const replier = (e: React.UIEvent<HTMLDivElement>) => {
+    const p = Math.min(1, e.currentTarget.scrollTop / 80);
+    feuille.current?.style.setProperty('--repli', p.toFixed(3));
+  };
 
   // Transition partagée : la photo part de sa position sur la carte.
   useLayoutEffect(() => {
@@ -106,6 +116,7 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
       onClick={onClose}
     >
       <motion.div
+        ref={feuille}
         role="dialog"
         aria-modal="true"
         aria-labelledby="titre-produit"
@@ -132,21 +143,25 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
             aria-hidden
             className="sm:hidden absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1.5 rounded-full bg-kc-beurre/30"
           />
-          <div
-            ref={photo}
-            className="absolute left-1/2 -translate-x-1/2 -bottom-20 w-52 h-52 sm:static sm:translate-x-0 sm:w-[80%] sm:h-auto sm:aspect-square rounded-full bg-kc-nuit p-2.5 shadow-[0_22px_44px_-18px_rgba(0,0,0,0.75)] z-10"
-          >
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-kc-indigo">
-              {produit.image_url && (
-                <Image
-                  src={produit.image_url}
-                  alt=""
-                  fill
-                  unoptimized
-                  sizes="(min-width: 640px) 320px, 208px"
-                  className="object-cover"
-                />
-              )}
+          {/* Repli : origine à 48 px du haut, de sorte qu'à l'échelle 0,5
+              le bas de la photo arrive pile au bord de l'en-tête (144 px). */}
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-20 w-52 h-52 origin-[50%_48px] [scale:calc(1-0.5*var(--repli,0))] sm:static sm:translate-x-0 sm:w-[80%] sm:h-auto sm:aspect-square sm:[scale:1] z-10">
+            <div
+              ref={photo}
+              className="w-full h-full rounded-full bg-kc-nuit p-2.5 shadow-[0_22px_44px_-18px_rgba(0,0,0,0.75)]"
+            >
+              <div className="relative w-full h-full rounded-full overflow-hidden bg-kc-indigo">
+                {produit.image_url && (
+                  <Image
+                    src={produit.image_url}
+                    alt=""
+                    fill
+                    unoptimized
+                    sizes="(min-width: 640px) 320px, 208px"
+                    className="object-cover"
+                  />
+                )}
+              </div>
             </div>
           </div>
           <button
@@ -160,7 +175,7 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col">
-          <div className="overflow-y-auto overscroll-contain px-6 pt-24 sm:pt-8 pb-4">
+          <div onScroll={replier} className="overflow-y-auto overscroll-contain px-6 pt-24 sm:pt-8 pb-4">
             <h3 id="titre-produit" className="text-[1.7rem] leading-tight font-extrabold text-center sm:text-left text-balance">
               {produit.nom}
             </h3>

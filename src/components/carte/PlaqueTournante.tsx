@@ -114,11 +114,14 @@ export default function PlaqueTournante({ produits, libelle, onComposer, onAjout
         </g>
       </svg>
 
+      {/* pb-44 / -mb-34 : les crêpes descendent sur l'arc et sortaient de
+          la zone visible du rail (overflow-x impose aussi overflow-y).
+          Marge nette inchangée (2,5 rem) ; la scène reste au-dessus. */}
       <ul
         ref={rail}
         onScroll={auDefilement}
         aria-label={libelle}
-        className="plaque-tour relative flex overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none pt-8 pb-10 px-[calc(50%-min(26vw,7rem))] sm:px-[calc(50%-8rem)]"
+        className="plaque-tour relative flex overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none pt-8 pb-44 -mb-34 px-[calc(50%-min(26vw,7rem))] sm:px-[calc(50%-8rem)]"
       >
         {produits.map((prod, i) => {
           const ko = estEpuise(prod);

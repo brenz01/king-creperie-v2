@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleDot, List, Search, X } from 'lucide-react';
 import type { CategorieProduit, Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
@@ -42,6 +42,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
   const [categorie, setCategorie] = useState<CategorieProduit>('salee');
   const [vue, setVue] = useState<Vue>('plaque');
   const [recherche, setRecherche] = useState('');
+  const champRecherche = useRef<HTMLInputElement>(null);
   const { synchroniser, addToCart } = useCart();
 
   useEffect(() => {
@@ -112,7 +113,9 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
       aria-labelledby="titre-carte"
       className="relative bg-kc-indigo text-kc-beurre pt-10 pb-28 scroll-mt-16 overflow-x-clip"
     >
-      <div className="max-w-3xl mx-auto px-5 sm:px-6">
+      {/* Au-dessus de la plaque : son disque (150vw) remonte sous les
+          rubriques au lieu de les recouvrir. */}
+      <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-6">
         <div className="flex items-end justify-between gap-4">
           <h2 id="titre-carte" className="font-display text-5xl sm:text-6xl leading-[0.95]">
             La carte
@@ -127,6 +130,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
             <span className="sr-only">Chercher une recette</span>
             <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-kc-brume/70" />
             <input
+              ref={champRecherche}
               id="recherche-carte"
               type="search"
               inputMode="search"
@@ -134,12 +138,16 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               placeholder="Chercher une recette"
-              className="w-full h-12 rounded-full bg-kc-nuit border border-kc-beurre/15 pl-12 pr-11 text-base text-kc-lait placeholder:text-kc-brume/55 focus:outline-none focus:border-kc-caramel"
+              // Une seule croix : celle du navigateur est masquée (WebKit/Blink).
+              className={`w-full h-12 rounded-full bg-kc-nuit border border-kc-beurre/15 pl-11 ${recherche ? 'pr-11' : 'pr-3'} text-base text-kc-lait placeholder:text-kc-brume/55 focus:outline-none focus:border-kc-caramel [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none`}
             />
             {recherche && (
               <button
                 type="button"
-                onClick={() => setRecherche('')}
+                onClick={() => {
+                  setRecherche('');
+                  champRecherche.current?.focus();
+                }}
                 aria-label="Effacer la recherche"
                 className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-kc-brume"
               >
@@ -168,12 +176,13 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
                     setVue(id);
                     if (id === 'plaque') setRecherche('');
                   }}
-                  className={`appui h-10 px-3.5 rounded-full flex items-center gap-1.5 text-sm font-semibold ${
+                  className={`appui h-10 min-w-10 px-3.5 max-sm:px-0 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold ${
                     actif ? 'bg-kc-beurre text-kc-nuit' : 'text-kc-brume'
                   }`}
                 >
                   <Icone className="w-4 h-4" aria-hidden />
-                  <span className="max-[380px]:sr-only">{libelle}</span>
+                  {/* Sur téléphone, icônes seules : la place revient au champ. */}
+                  <span className="max-sm:sr-only">{libelle}</span>
                 </button>
               );
             })}

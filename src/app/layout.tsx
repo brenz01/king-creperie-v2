@@ -5,6 +5,8 @@ import { CartProvider } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import FloatingCartBar from '@/components/FloatingCartBar';
 import PwaProvider from '@/components/pwa/PwaProvider';
+import CommandePanel from '@/components/commande/CommandePanel';
+import ToastZone from '@/components/ToastZone';
 import './globals.css';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
@@ -51,6 +53,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Navbar />
               <main>{children}</main>
               <FloatingCartBar />
+              <CommandePanel />
+              <ToastZone />
             </SmoothScrollProvider>
           </CartProvider>
         </PwaProvider>

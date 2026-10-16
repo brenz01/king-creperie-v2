@@ -5,7 +5,9 @@ import type { Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
 import { useCart } from '@/context/CartContext';
 import { motion } from 'framer-motion';
-import { X, Plus, Minus, Check } from 'lucide-react';
+import { X, Plus, Minus, Check, Share2 } from 'lucide-react';
+import { afficherToast } from '@/lib/toast';
+import { urlPartage } from '@/lib/whatsapp';
 import Image from 'next/image';
 
 interface ProductModalProps {
@@ -51,7 +53,24 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
       },
       quantite
     );
+    afficherToast(quantite > 1 ? `${quantite} crêpes ajoutées au panier.` : 'Crêpe ajoutée au panier.');
     onClose();
+  };
+
+  // Partage d'une crêpe précise : le lien rouvre directement sa fiche.
+  const partager = async () => {
+    const lien = `${window.location.origin}/?produit=${produit.id}#carte`;
+    const texte = `Celle-là me tente bien chez King Crêperie : ${produit.nom}, ${produit.prix.toLocaleString('fr-FR')} F.`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: produit.nom, text: texte, url: lien });
+        return;
+      } catch {
+        // partage annulé : rien à faire
+        return;
+      }
+    }
+    window.open(urlPartage(`${texte} ${lien}`), '_blank', 'noopener');
   };
 
   return (
@@ -90,12 +109,23 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
             {produit.nom}
           </h3>
           {produit.description && (
-            <p className="mt-2 text-center text-[0.95rem] text-kc-encre/70 leading-relaxed">{produit.description}</p>
+            <p className="mt-2 text-center text-base text-kc-encre/75 leading-relaxed">{produit.description}</p>
           )}
+          <div className="mt-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void partager()}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-kc-indigo px-3 py-2 rounded-full hover:bg-kc-indigo/5"
+            >
+              <Share2 className="w-4 h-4" /> Partager cette crêpe
+            </button>
+          </div>
 
           {extras.length > 0 && (
             <fieldset className="mt-7">
-              <legend className="text-base font-semibold">Ajouter des extras</legend>
+              <legend className="text-base font-semibold">
+                Extras <span className="font-normal text-kc-encre/55">(facultatif)</span>
+              </legend>
               <div className="mt-3 flex flex-wrap gap-2">
                 {extras.map((extra) => {
                   const actif = selection.some((s) => s.id === extra.id);
@@ -113,7 +143,7 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
                     >
                       {actif ? <Check className="w-4 h-4" strokeWidth={3} /> : <Plus className="w-4 h-4" />}
                       {extra.nom}
-                      <span className={actif ? 'text-kc-beurre/70' : 'text-kc-encre/50'}>+{extra.prix.toLocaleString('fr-FR')}</span>
+                      <span className={`prix ${actif ? 'text-kc-beurre/80' : 'text-kc-encre/55'}`}>+{extra.prix.toLocaleString('fr-FR')} F</span>
                     </button>
                   );
                 })}
@@ -153,7 +183,7 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
             className="w-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold py-4 px-6 rounded-full flex items-center justify-between transition-colors disabled:opacity-50"
           >
             <span>{produit.disponible ? 'Ajouter au panier' : 'Indisponible'}</span>
-            <span className="font-display text-xl">{total.toLocaleString('fr-FR')} F</span>
+            <span className="prix text-xl">{total.toLocaleString('fr-FR')} F</span>
           </button>
         </div>
       </motion.div>

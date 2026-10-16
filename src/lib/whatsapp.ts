@@ -11,3 +11,8 @@ export function urlWhatsApp(texte: string): string {
 export function urlContactWhatsApp(): string {
   return `https://wa.me/${NUMERO_WHATSAPP}`;
 }
+
+// Partage vers n'importe quel contact (sans numéro destinataire).
+export function urlPartage(texte: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(texte)}`;
+}

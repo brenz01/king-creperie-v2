@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Produit } from '@/types';
 import PlaqueItem from './PlaqueItem';
@@ -18,6 +18,9 @@ interface PlaqueRailProps {
 // sur ordinateur, des flèches font avancer d'un écran.
 export default function PlaqueRail({ id, titre, unite, produits, onChoisir, onAjouterDirect }: PlaqueRailProps) {
   const rail = useRef<HTMLUListElement>(null);
+  // « Tout voir » : toute la rubrique d'un coup, pour qui sait déjà ce
+  // qu'il veut. « Faire défiler » revient à la plaque.
+  const [grille, setGrille] = useState(false);
 
   const defiler = (sens: 1 | -1) => {
     const el = rail.current;
@@ -38,34 +41,54 @@ export default function PlaqueRail({ id, titre, unite, produits, onChoisir, onAj
             {produits.length} {unite}
           </p>
         </div>
-        <div className="hidden sm:flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => defiler(-1)}
-            aria-label={`${titre} : précédents`}
-            className="w-11 h-11 rounded-full border border-kc-beurre/30 text-kc-beurre hover:border-kc-beurre flex items-center justify-center transition-colors"
+            onClick={() => setGrille((g) => !g)}
+            aria-pressed={grille}
+            className="h-11 px-4 rounded-full border border-kc-beurre/30 text-kc-beurre text-sm font-semibold hover:border-kc-beurre transition-colors"
           >
-            <ChevronLeft className="w-5 h-5" />
+            {grille ? 'Faire défiler' : 'Tout voir'}
           </button>
-          <button
-            type="button"
-            onClick={() => defiler(1)}
-            aria-label={`${titre} : suivants`}
-            className="w-11 h-11 rounded-full border border-kc-beurre/30 text-kc-beurre hover:border-kc-beurre flex items-center justify-center transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {!grille && (
+            <>
+              <button
+                type="button"
+                onClick={() => defiler(-1)}
+                aria-label={`${titre} : précédents`}
+                className="hidden sm:flex w-11 h-11 rounded-full border border-kc-beurre/30 text-kc-beurre hover:border-kc-beurre items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => defiler(1)}
+                aria-label={`${titre} : suivants`}
+                className="hidden sm:flex w-11 h-11 rounded-full border border-kc-beurre/30 text-kc-beurre hover:border-kc-beurre items-center justify-center transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <ul
-        ref={rail}
-        className="mt-4 flex gap-1 sm:gap-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory sm:snap-proximity scrollbar-none py-4 px-[24vw] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] sm:scroll-px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
-      >
-        {produits.map((p) => (
-          <PlaqueItem key={p.id} produit={p} onChoisir={onChoisir} onAjouterDirect={onAjouterDirect} />
-        ))}
-      </ul>
+      {grille ? (
+        <ul className="max-w-6xl mx-auto px-5 sm:px-6 mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-7">
+          {produits.map((p) => (
+            <PlaqueItem key={p.id} produit={p} disposition="grille" onChoisir={onChoisir} onAjouterDirect={onAjouterDirect} />
+          ))}
+        </ul>
+      ) : (
+        <ul
+          ref={rail}
+          className="mt-4 flex gap-1 sm:gap-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory sm:snap-proximity scrollbar-none py-4 px-[24vw] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] sm:scroll-px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
+        >
+          {produits.map((p) => (
+            <PlaqueItem key={p.id} produit={p} onChoisir={onChoisir} onAjouterDirect={onAjouterDirect} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

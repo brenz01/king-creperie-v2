@@ -7,12 +7,28 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 // Configuration — tout est optionnel : sans clés VAPID le push est
 // simplement désactivé (routes en 503, bouton masqué côté client).
 // ------------------------------------------------------------------
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:contact@king-creperie.sn';
+// Valeurs nettoyées : un espace ou des guillemets collés par erreur dans
+// Vercel suffisent à faire échouer web-push.
+const propre = (v: string | undefined) => v?.trim().replace(/^["']|["']$/g, '') || undefined;
+const VAPID_PUBLIC = propre(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+const VAPID_PRIVATE = propre(process.env.VAPID_PRIVATE_KEY);
+const sujetBrut = propre(process.env.VAPID_SUBJECT) ?? 'mailto:contact@king-creperie.sn';
+// web-push exige une URL : « contact@x.sn » devient « mailto:contact@x.sn ».
+const VAPID_SUBJECT = /^(mailto:|https:)/.test(sujetBrut) ? sujetBrut : `mailto:${sujetBrut}`;
 
-export const pushConfigure = Boolean(VAPID_PUBLIC && VAPID_PRIVATE);
-if (pushConfigure) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC!, VAPID_PRIVATE!);
+// Une configuration invalide ne doit jamais casser le build ni le site :
+// le push est alors désactivé et l'erreur est journalisée.
+function configurer(): boolean {
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return false;
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+    return true;
+  } catch (e) {
+    console.error('[push] Configuration VAPID invalide, push désactivé :', (e as Error).message);
+    return false;
+  }
+}
+export const pushConfigure = configurer();
 
 // Seuls les services push des navigateurs sont acceptés comme endpoint :
 // sans cette liste, /api/push/dispatch deviendrait un relais SSRF

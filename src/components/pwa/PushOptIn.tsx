@@ -64,8 +64,8 @@ export default function PushOptIn({ cible, libelle, compact }: PushOptInProps) {
         disabled={etat === 'chargement'}
         className={
           compact
-            ? 'inline-flex items-center gap-2 bg-[#26201A] border border-[#3D332A] text-amber-400 font-bold px-4 py-2.5 rounded-xl hover:border-amber-600/50 text-sm transition-colors disabled:opacity-60'
-            : 'inline-flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors disabled:opacity-60'
+            ? 'inline-flex items-center gap-2 bg-[#26201A] border border-[#3D332A] text-kc-caramel font-bold px-4 py-2.5 rounded-xl hover:border-amber-600/50 text-sm transition-colors disabled:opacity-60'
+            : 'inline-flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors disabled:opacity-60'
         }
       >
         {etat === 'chargement' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}

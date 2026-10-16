@@ -9,8 +9,8 @@ export default function HorsLignePage() {
   return (
     <div className="min-h-screen pt-32 pb-16 px-6 max-w-lg mx-auto text-center flex flex-col items-center justify-center">
       <div className="bg-white border border-stone-200/80 shadow-sm p-8 rounded-3xl w-full flex flex-col items-center">
-        <WifiOff className="w-12 h-12 text-amber-700 mb-4" />
-        <h1 className="font-serif text-2xl font-semibold text-stone-900 mb-2">Pas de connexion</h1>
+        <WifiOff className="w-12 h-12 text-kc-bissap mb-4" />
+        <h1 className="font-serif text-2xl font-semibold text-kc-encre mb-2">Pas de connexion</h1>
         <p className="text-stone-500 text-sm mb-6">
           Cette page n&apos;est pas disponible hors ligne. Les pages déjà consultées (dont la carte) restent
           accessibles ; la commande et le suivi en direct reprendront dès le retour du réseau.
@@ -19,7 +19,7 @@ export default function HorsLignePage() {
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/"
-          className="inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-bold px-6 py-3 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-bold px-6 py-3 rounded-lg transition-colors"
         >
           Réessayer
         </a>

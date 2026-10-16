@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { inter, fraunces } from './fonts';
+import { onest, bagel } from './fonts';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
 import { CartProvider } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="fr" className={`${onest.variable} ${bagel.variable}`}>
       <body className="bg-brand-cream text-brand-chocolate font-sans antialiased selection:bg-amber-600 selection:text-white min-h-screen">
         <PwaProvider>
           <CartProvider>

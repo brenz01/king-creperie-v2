@@ -1,95 +1,56 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { ArrowRight, Utensils } from 'lucide-react';
 import Link from 'next/link';
 
+// Accueil : une phrase, une crêpe qui tourne (la vidéo dans un cercle,
+// comme sur la plaque), deux actions. Le cercle annonce la forme de
+// toute la carte en dessous.
 export default function HeroSection() {
   return (
-    <section className="relative w-full min-h-[100svh] grid grid-cols-1 lg:grid-cols-2 items-stretch bg-brand-cream">
-      {/* Colonne texte */}
-      <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-24 lg:py-0 order-2 lg:order-1">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="inline-flex items-center gap-2 mb-6 text-amber-700 text-xs sm:text-sm font-bold uppercase tracking-wide"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
-          <span>Les Almadies · Dakar</span>
-        </motion.div>
+    <section className="relative overflow-hidden bg-kc-indigo text-kc-beurre pt-16">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 grid md:grid-cols-[1.1fr_1fr] items-center gap-6 md:gap-10 pt-6 pb-14 md:py-20">
+        {/* La plaque */}
+        <div className="relative order-1 md:order-2 flex justify-end md:justify-center">
+          <div className="relative w-[78vw] max-w-[26rem] md:w-[30rem] md:max-w-none aspect-square -mr-[18vw] md:mr-0">
+            <div className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]" />
+            <div className="absolute inset-[5%] rounded-full overflow-hidden ring-[10px] ring-kc-caramel/25">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster="/videos/hero-poster.jpg"
+                aria-hidden="true"
+                className="w-full h-full object-cover scale-110"
+              >
+                <source src="/videos/hero-bg.webm" type="video/webm" />
+                <source src="/videos/hero-bg.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+        </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="font-serif text-5xl sm:text-6xl lg:text-[3.6rem] leading-[1.02] text-stone-900 mb-6"
-        >
-          La crêpe bretonne,
-          <br />
-          <em className="italic font-medium text-amber-700">version Dakar</em>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-stone-600 text-base sm:text-lg max-w-md mb-10 leading-relaxed"
-        >
-          Pâte tournée minute, garnitures locales, servie chaude sur commande. Une adresse de quartier qui prend la crêpe au sérieux.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
-          className="flex flex-wrap gap-3"
-        >
-          <a href="#menu" className="inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-bold px-7 py-4 rounded-lg transition-colors">
-            <Utensils className="w-4 h-4" />
-            <span>Voir la carte</span>
-          </a>
-          <Link href="/suivi" className="inline-flex items-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white font-bold px-6 py-4 rounded-lg transition-colors">
-            <span>Suivre ma commande</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </motion.div>
-      </div>
-
-      {/* Colonne vidéo */}
-      <div className="relative min-h-[340px] lg:min-h-0 order-1 lg:order-2 overflow-hidden">
-        {/* 720p sans piste audio : 0,5 Mo (WebM) / 0,7 Mo (MP4) au lieu de
-            2,9 Mo. Le poster s'affiche immédiatement (LCP) et sert de
-            repli si l'autoplay est bloqué (mode économie de données). */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          poster="/videos/hero-poster.jpg"
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/videos/hero-bg.webm" type="video/webm" />
-          <source src="/videos/hero-bg.mp4" type="video/mp4" />
-        </video>
-
-        {/* Dégradé qui fond la vidéo vers le crème, pas de voile noir */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-cream via-transparent to-transparent lg:from-brand-cream lg:via-transparent lg:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="absolute bottom-6 left-6 lg:bottom-10 lg:left-10 bg-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-3"
-        >
-          <span className="font-serif text-2xl font-bold text-amber-700">50+</span>
-          <span className="text-xs text-stone-600 leading-tight max-w-[110px]">
-            crêpes et formules à composer
-          </span>
-        </motion.div>
+        <div className="order-2 md:order-1 -mt-10 md:mt-0 relative">
+          <h1 className="font-display text-[2.35rem] leading-[1.04] sm:text-6xl md:text-[4.2rem] md:leading-[0.98] tracking-tight text-balance">
+            Chaude, sortie de la plaque, livrée chez vous.
+          </h1>
+          <p className="mt-5 max-w-md text-base sm:text-lg text-kc-beurre/80 leading-relaxed">
+            Crêpes salées, sucrées et jus maison aux Almadies. On livre de Ngor au Plateau, vous payez à la livraison.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href="#carte"
+              className="inline-flex items-center bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
+            >
+              Choisir mes crêpes
+            </a>
+            <Link
+              href="/suivi"
+              className="inline-flex items-center border border-kc-beurre/40 hover:border-kc-beurre text-kc-beurre font-semibold text-base px-6 py-3.5 rounded-full transition-colors"
+            >
+              Suivre ma commande
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

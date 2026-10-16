@@ -1,5 +1,6 @@
 # Vérification automatique de chaque PR et de chaque push sur main :
-# types, lint, build de production (service worker compris).
+# types, lint, build de production (service worker compris), puis tests
+# de bout en bout contre un faux Supabase (aucune donnée réelle).
 name: CI
 
 on:
@@ -34,3 +35,28 @@ jobs:
         run: pnpm lint
       - name: Build de production
         run: pnpm build
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Navigateur de test
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Tests (unitaires + bout en bout)
+        run: pnpm test:e2e
+      - name: Rapport en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

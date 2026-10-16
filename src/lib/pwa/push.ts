@@ -12,6 +12,21 @@ export function pushSupporte(): boolean {
   );
 }
 
+// Explique pourquoi le push n'est pas disponible (affiché dans l'admin
+// au lieu de masquer le bouton sans rien dire).
+export function raisonPushIndisponible(): string {
+  if (typeof window === 'undefined') return '';
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches;
+  if (VAPID_PUBLIC_KEY.length === 0) return 'Notifications non configurées sur ce déploiement (clé VAPID publique absente).';
+  if (ios && !standalone)
+    return 'Sur iPhone : Partager → « Sur l’écran d’accueil », puis ouvrez l’app depuis l’icône pour activer les alertes.';
+  if (!('serviceWorker' in navigator)) return 'Ce navigateur ne gère pas les notifications (navigation privée ?).';
+  if (!('PushManager' in window) || !('Notification' in window))
+    return ios ? 'iOS 16.4 ou plus récent requis pour les notifications.' : 'Ce navigateur ne gère pas les notifications.';
+  return '';
+}
+
 function base64UrlVersUint8(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const brut = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));

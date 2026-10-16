@@ -2,8 +2,9 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { Bell, BellRing, BellOff, Loader2 } from 'lucide-react';
-import { activerPush, pushSupporte } from '@/lib/pwa/push';
+import { activerPush, pushSupporte, raisonPushIndisponible } from '@/lib/pwa/push';
 import { useInstallation } from '@/lib/pwa/install';
+import { useEstHydrate } from '@/lib/useEstHydrate';
 
 type Etat = 'inactif' | 'chargement' | 'actif' | 'refuse' | 'erreur';
 
@@ -19,6 +20,7 @@ interface PushOptInProps {
 export default function PushOptIn({ cible, libelle, compact }: PushOptInProps) {
   const permission = useSyncExternalStore(sAbonner, lirePermission, () => 'unsupported');
   const installation = useInstallation();
+  const hydrate = useEstHydrate();
   const [etat, setEtat] = useState<Etat>('inactif');
 
   if (permission === 'unsupported') {
@@ -30,6 +32,15 @@ export default function PushOptIn({ cible, libelle, compact }: PushOptInProps) {
           Sur iPhone, installez l’app (ci-dessus) pour recevoir les notifications de suivi.
         </p>
       );
+    }
+    if (compact && hydrate) {
+      const raison = raisonPushIndisponible();
+      if (raison)
+        return (
+          <p className="inline-flex items-center gap-2 text-xs text-stone-400 max-w-xs">
+            <BellOff className="w-4 h-4 shrink-0" /> {raison}
+          </p>
+        );
     }
     return null;
   }

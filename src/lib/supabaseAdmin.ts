@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { clientAdminAutorise } from '@/lib/environnement';
 
 // Client service_role — bypass RLS. Importable uniquement côté serveur
 // (le paquet `server-only` fait échouer le build s'il fuit côté client).
@@ -9,6 +10,10 @@ let instance: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (instance) return instance;
+  // Aperçu Vercel : base de production partagée, aucune écriture privilégiée.
+  if (!clientAdminAutorise()) {
+    throw new Error('Client service_role refusé dans un déploiement Vercel Preview (base de production partagée).');
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {

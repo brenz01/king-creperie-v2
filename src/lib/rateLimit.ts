@@ -1,8 +1,9 @@
-// Rate limiting simple en mémoire, par clé, fenêtre glissante.
-// Limite : se réinitialise à chaque cold start de la fonction
-// serverless Vercel — acceptable pour dissuader le spam manuel /
-// scripts basiques, pas une protection anti-DDoS à grande échelle.
-// Pour une garantie plus forte à l'avenir : Upstash Redis + Vercel KV.
+// Rate limiting en mémoire, fenêtre fixe, par clé.
+//
+// Limites assumées : les compteurs vivent dans l'instance serverless
+// (pas de partage entre instances Vercel, remise à zéro au cold start).
+// Suffisant contre le spam manuel / scripts basiques ; pour une
+// garantie globale, migrer vers Upstash Redis (même interface).
 
 interface Entree {
   compteur: number;
@@ -11,60 +12,46 @@ interface Entree {
 
 const compteurs = new Map<string, Entree>();
 
-const FENETRE_MS_DEFAUT = 10 * 60 * 1000; // 10 minutes
-const MAX_REQUETES_DEFAUT = 5; // 5 requêtes max / fenêtre / clé
-
-function nettoyerEntreesExpirees(fenetreMs: number) {
-  const maintenant = Date.now();
-  for (const [cle, entree] of compteurs.entries()) {
-    if (maintenant - entree.debutFenetre > fenetreMs) {
-      compteurs.delete(cle);
-    }
+function nettoyer(maintenant: number) {
+  for (const [cle, entree] of compteurs) {
+    // Fenêtre max utilisée dans l'app : 15 min.
+    if (maintenant - entree.debutFenetre > 15 * 60 * 1000) compteurs.delete(cle);
   }
 }
 
-// Version générique, paramétrable — utilisée par toute route ayant
-// besoin d'un seuil différent (ex: login plus strict que commandes).
-export function verifierRateLimitPersonnalise(
-  identifiant: string,
-  maxRequetes: number = MAX_REQUETES_DEFAUT,
-  fenetreMs: number = FENETRE_MS_DEFAUT
-): { autorise: boolean; reessayerDansMs?: number } {
-  const maintenant = Date.now();
+export interface ResultatRateLimit {
+  autorise: boolean;
+  reessayerDansMs?: number;
+}
 
-  if (compteurs.size > 1000) {
-    nettoyerEntreesExpirees(fenetreMs);
-  }
+export function verifierRateLimit(
+  identifiant: string,
+  maxRequetes: number,
+  fenetreMs: number
+): ResultatRateLimit {
+  const maintenant = Date.now();
+  if (compteurs.size > 5000) nettoyer(maintenant);
 
   const entree = compteurs.get(identifiant);
-
   if (!entree || maintenant - entree.debutFenetre > fenetreMs) {
     compteurs.set(identifiant, { compteur: 1, debutFenetre: maintenant });
     return { autorise: true };
   }
-
   if (entree.compteur >= maxRequetes) {
-    const reessayerDansMs = fenetreMs - (maintenant - entree.debutFenetre);
-    return { autorise: false, reessayerDansMs };
+    return { autorise: false, reessayerDansMs: fenetreMs - (maintenant - entree.debutFenetre) };
   }
-
   entree.compteur += 1;
   return { autorise: true };
 }
 
-// Conservé pour compatibilité avec /api/commandes — équivaut à
-// verifierRateLimitPersonnalise avec les seuils par défaut (5/10min).
-export function verifierRateLimit(identifiant: string): { autorise: boolean; reessayerDansMs?: number } {
-  return verifierRateLimitPersonnalise(identifiant, MAX_REQUETES_DEFAUT, FENETRE_MS_DEFAUT);
-}
-
-// Extrait la meilleure IP disponible depuis les headers Vercel/proxy.
+// Sur Vercel, x-forwarded-for est réécrit par l'edge (non falsifiable
+// par le client). Ailleurs (dev local), la valeur n'est qu'indicative.
 export function extraireIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) return realIp;
-  return 'inconnu';
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') ?? 'inconnu';
+}
+
+export function minutesRestantes(ms: number | undefined): number {
+  return Math.max(1, Math.ceil((ms ?? 0) / 60000));
 }

@@ -36,6 +36,7 @@ Interface staff avec gestion des commandes en direct, gestion du stock produit p
 | **Backend** | Next.js API Routes, Supabase (PostgreSQL) |
 | **Temps réel** | Supabase Realtime (Broadcast) |
 | **Auth** | Supabase Auth |
+| **PWA** | Manifest Next.js, service worker Serwist (Turbopack), Web Push (VAPID) |
 | **Déploiement** | Vercel (CI/CD continu depuis `main`) |
 
 ---
@@ -64,6 +65,24 @@ Ce projet a fait l'objet d'un travail de sécurisation approfondi, au-delà d'un
 - Gestion de stock optionnelle par produit (activable produit par produit)
 - Tableau de bord administrateur : commandes en direct, gestion produits/stock, historique d'audit
 - Design entièrement personnalisé (identité visuelle propre, pas de thème générique)
+- **Application installable (PWA)** : écran d'accueil Android/iOS sans store, carte consultable hors ligne, mises à jour proposées en un clic
+- **Notifications push** : le client est prévenu à chaque étape (« votre commande est en route »), le staff à chaque nouvelle commande
+
+---
+
+## 📱 Progressive Web App
+
+| Brique | Implémentation |
+|---|---|
+| Manifest | `src/app/manifest.ts` — icônes `any` + `maskable`, raccourcis « Carte » / « Suivi » |
+| Service worker | `src/app/sw.ts` (Serwist) servi par `src/app/serwist/[path]/route.ts` |
+| Stratégie de cache | **Jamais de cache** pour `/api`, `/admin`, Supabase REST/Realtime/Auth, vidéo. `CacheFirst` assets versionnés, `StaleWhileRevalidate` photos produits, `NetworkFirst` pages, repli `/~offline` |
+| Précache | Minimal (page hors ligne + icônes) pour économiser la data mobile |
+| Mises à jour | Le nouveau SW attend ; toast « Mettre à jour » (jamais de rechargement en plein tunnel de commande) |
+| Installation | Bandeau après la 1ʳᵉ commande : bouton natif sur Android, instructions Partager → Écran d'accueil sur iOS |
+| Push | Base → trigger `pg_net` → `/api/push/dispatch` (secret partagé) → `web-push`. Endpoints filtrés (anti-SSRF), abonnements purgés à la livraison |
+
+Tester en local : `pnpm build && pnpm start` (le SW est désactivé en `pnpm dev`), puis Chrome DevTools → Application.
 
 ---
 
@@ -83,7 +102,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_WHATSAPP_NUMBER=
 NEXT_PUBLIC_SITE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+# Optionnel — notifications push
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
+PUSH_WEBHOOK_SECRET=
 ```
+
+Voir `.env.example` et `supabase/README.md` (migrations SQL et réglages Auth).
 
 > ⚠️ `SUPABASE_SERVICE_ROLE_KEY` ne doit **jamais** être exposée côté client ni committée — variable serveur uniquement.
 
@@ -101,8 +127,6 @@ Projet personnel — tous droits réservés. Code partagé à titre de démonstr
 
 ## 🎥 Démo vidéo
 
-## 🎥 Démo vidéo
-
 <p align="center">
   <a href="https://youtu.be/ojgIWsCvSdg">
     <img src="https://img.youtube.com/vi/ojgIWsCvSdg/maxresdefault.jpg" alt="Démo King Crêperie V2" width="720">
@@ -110,8 +134,6 @@ Projet personnel — tous droits réservés. Code partagé à titre de démonstr
   <br>
   <em>▶ Voir la démo complète sur YouTube</em>
 </p>
-
-*Parcours complet : navigation dans le menu, personnalisation d'une crêpe, ajout au panier, tunnel de commande, et suivi en temps réel côté client.*
 
 *Parcours complet : navigation dans le menu, personnalisation d'une crêpe, ajout au panier, tunnel de commande, et suivi en temps réel côté client.*
 

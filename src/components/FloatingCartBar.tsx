@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -12,8 +12,9 @@ export default function FloatingCartBar() {
   const { totalCount, totalAmount } = useCart();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const fermer = useCallback(() => setDrawerOpen(false), []);
 
-  if (totalCount === 0 || pathname === '/commande' || pathname === '/suivi') {
+  if (totalCount === 0 || pathname === '/commande' || pathname === '/suivi' || pathname.startsWith('/admin')) {
     return null;
   }
 
@@ -25,7 +26,7 @@ export default function FloatingCartBar() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-xl"
+          className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-xl"
         >
           <div className="bg-stone-900 text-white p-4 rounded-xl shadow-2xl flex items-center justify-between border border-stone-800/60">
             <button
@@ -59,7 +60,7 @@ export default function FloatingCartBar() {
         </motion.div>
       </AnimatePresence>
 
-      <CartDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <CartDrawer isOpen={drawerOpen} onClose={fermer} />
     </>
   );
 }

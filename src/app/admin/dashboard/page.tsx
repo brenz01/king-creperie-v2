@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { RealtimeChannel, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { Commande, StatutCommande, Produit } from '@/types';
+import { LIBELLE_STATUT, type Commande, type StatutCommande, type Produit } from '@/types';
+import PushOptIn from '@/components/pwa/PushOptIn';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, LogOut, Package, ClipboardList, Save, History } from 'lucide-react';
 
 type Onglet = 'commandes' | 'produits' | 'historique';
 
-const LIBELLE_STATUT: Record<string, string> = {
-  recue: 'Commande Reçue',
-  en_preparation: 'En Préparation',
-  en_livraison: 'En Livraison',
-  livree: 'Livrée',
-  annulee: 'Annulée',
-};
-
-const COULEUR_STATUT: Record<string, string> = {
+const COULEUR_STATUT: Record<StatutCommande, string> = {
   recue: 'text-amber-400',
   en_preparation: 'text-blue-400',
   en_livraison: 'text-purple-400',
@@ -39,93 +33,98 @@ export default function AdminDashboardPage() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [auditLog, setAuditLog] = useState<LigneAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sessionVerifiee, setSessionVerifiee] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [erreurStatut, setErreurStatut] = useState<string | null>(null);
   const router = useRouter();
 
-  const fetchCommandes = async () => {
-    setLoading(true);
+  const fetchCommandes = useCallback(async () => {
+    // Les 100 plus récentes : suffisant pour le service, et évite de
+    // recharger tout l'historique à chaque événement Broadcast.
     const { data, error } = await supabase
       .from('commandes')
       .select('*, commande_items(*)')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setCommandes(data as Commande[]);
-    }
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (!error && data) setCommandes(data as Commande[]);
     setLoading(false);
-  };
+  }, []);
 
-  const fetchProduits = async () => {
-    const { data, error } = await supabase
-      .from('produits')
-      .select('*')
-      .order('nom', { ascending: true });
+  const fetchProduits = useCallback(async () => {
+    const { data, error } = await supabase.from('produits').select('*').order('nom', { ascending: true });
+    if (!error && data) setProduits(data as Produit[]);
+  }, []);
 
-    if (!error && data) {
-      setProduits(data as Produit[]);
-    }
-  };
-
-  const fetchAuditLog = async () => {
+  const fetchAuditLog = useCallback(async () => {
     const { data, error } = await supabase
       .from('commandes_audit_log')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-
-    if (!error && data) {
-      setAuditLog(data as LigneAuditLog[]);
-    }
-  };
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.push('/admin/login');
-        return;
-      }
-
-      setSessionVerifiee(true);
-
-      supabase.realtime.setAuth(session.access_token);
-
-      fetchCommandes();
-      fetchProduits();
-      fetchAuditLog();
-
-      const channel = supabase
-        .channel('admin-commandes', { config: { private: true } })
-        .on('broadcast', { event: '*' }, () => {
-          fetchCommandes();
-          fetchAuditLog();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    });
+    if (!error && data) setAuditLog(data as LigneAuditLog[]);
   }, []);
 
-  const handleUpdateStatus = async (id: string, newStatut: StatutCommande) => {
-    const { error } = await supabase
-      .from('commandes')
-      .update({ statut: newStatut })
-      .eq('id', id);
+  useEffect(() => {
+    let actif = true;
+    let channel: RealtimeChannel | null = null;
 
-    if (!error) {
-      setCommandes((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, statut: newStatut } : c))
-      );
+    // Garde le jeton Realtime à jour après chaque refresh de session
+    // (sinon le canal privé est coupé à l'expiration du JWT, ~1 h).
+    const { data: ecoute } = supabase.auth.onAuthStateChange((evenement, s) => {
+      if (!actif) return;
+      if (evenement === 'SIGNED_OUT' || !s) {
+        router.replace('/admin/login');
+        return;
+      }
+      void supabase.realtime.setAuth(s.access_token);
+      setSession(s);
+    });
+
+    void supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!actif) return;
+      if (!s) {
+        router.replace('/admin/login');
+        return;
+      }
+      setSession(s);
+      void supabase.realtime.setAuth(s.access_token);
+      void fetchCommandes();
+      void fetchProduits();
+      void fetchAuditLog();
+
+      channel = supabase
+        .channel('admin-commandes', { config: { private: true } })
+        .on('broadcast', { event: '*' }, () => {
+          void fetchCommandes();
+          void fetchAuditLog();
+        })
+        .subscribe();
+    });
+
+    // Cleanup réellement retourné par l'effet (avant : retourné depuis
+    // le .then(), donc jamais exécuté → canaux dupliqués à chaque visite).
+    return () => {
+      actif = false;
+      ecoute.subscription.unsubscribe();
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [router, fetchCommandes, fetchProduits, fetchAuditLog]);
+
+  const handleUpdateStatus = async (id: string, newStatut: StatutCommande) => {
+    setErreurStatut(null);
+    const { error } = await supabase.from('commandes').update({ statut: newStatut }).eq('id', id);
+    if (error) {
+      setErreurStatut(`Changement de statut refusé : ${error.message}`);
+      return;
     }
+    setCommandes((prev) => prev.map((c) => (c.id === id ? { ...c, statut: newStatut } : c)));
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    router.replace('/admin/login');
   };
 
-  if (!sessionVerifiee) {
+  if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#1C1712]">
         <p className="text-amber-500 font-medium">Vérification de la session...</p>
@@ -141,10 +140,12 @@ export default function AdminDashboardPage() {
           <p className="text-stone-400 text-sm">Gestion des commandes, produits et historique</p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
+          <PushOptIn cible={{ accessToken: session.access_token }} libelle="Alertes nouvelles commandes" compact />
           {onglet === 'commandes' && (
             <button
-              onClick={fetchCommandes}
+              onClick={() => void fetchCommandes()}
+              aria-label="Rafraîchir"
               className="p-3 bg-[#26201A] border border-[#3D332A] rounded-xl text-stone-300 hover:text-white hover:border-amber-600/50 transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
@@ -196,11 +197,20 @@ export default function AdminDashboardPage() {
         </button>
       </div>
 
+      {erreurStatut && (
+        <div role="alert" className="mb-6 bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-xl text-sm font-medium">
+          {erreurStatut}
+        </div>
+      )}
+
       {onglet === 'commandes' && (
         loading ? (
           <p className="text-amber-500 text-center py-12 font-medium">Chargement des commandes...</p>
         ) : (
           <div className="space-y-4">
+            {commandes.length === 0 && (
+              <p className="text-stone-500 text-center py-12">Aucune commande pour le moment.</p>
+            )}
             {commandes.map((cmd) => (
               <div key={cmd.id} className="bg-[#26201A] border border-[#3D332A] p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-md">
                 <div className="space-y-1">
@@ -227,6 +237,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <select
+                    aria-label={`Statut de la commande ${cmd.id.slice(0, 8)}`}
                     value={cmd.statut}
                     onChange={(e) => handleUpdateStatus(cmd.id, e.target.value as StatutCommande)}
                     className="bg-[#1C1712] border border-[#3D332A] text-white font-bold text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500 transition-colors"
@@ -270,6 +281,7 @@ function HistoriqueAudit({ auditLog, commandes, onRefresh }: HistoriqueAuditProp
         <p className="text-stone-400 text-sm">{auditLog.length} changement{auditLog.length > 1 ? 's' : ''} récent{auditLog.length > 1 ? 's' : ''}</p>
         <button
           onClick={onRefresh}
+          aria-label="Rafraîchir l'historique"
           className="p-2.5 bg-[#26201A] border border-[#3D332A] rounded-xl text-stone-300 hover:text-white hover:border-amber-600/50 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
@@ -293,11 +305,11 @@ function HistoriqueAudit({ auditLog, commandes, onRefresh }: HistoriqueAuditProp
                     <span className="text-sm text-stone-300">{commande.client_nom}</span>
                   )}
                   <span className="text-sm text-stone-500">
-                    {ligne.ancien_statut ? (LIBELLE_STATUT[ligne.ancien_statut] || ligne.ancien_statut) : '—'}
+                    {ligne.ancien_statut ? (LIBELLE_STATUT[ligne.ancien_statut as StatutCommande] ?? ligne.ancien_statut) : '—'}
                   </span>
                   <span className="text-stone-600">→</span>
-                  <span className={`text-sm font-bold ${COULEUR_STATUT[ligne.nouveau_statut] || 'text-white'}`}>
-                    {LIBELLE_STATUT[ligne.nouveau_statut] || ligne.nouveau_statut}
+                  <span className={`text-sm font-bold ${COULEUR_STATUT[ligne.nouveau_statut as StatutCommande] ?? 'text-white'}`}>
+                    {LIBELLE_STATUT[ligne.nouveau_statut as StatutCommande] ?? ligne.nouveau_statut}
                   </span>
                 </div>
 
@@ -330,7 +342,7 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
   const [sauvegardeEnCours, setSauvegardeEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  const getValeur = (produit: any): ModifsProduit => {
+  const getValeur = (produit: Produit): ModifsProduit => {
     return modifs[produit.id] || {
       disponible: produit.disponible,
       stock_gere: produit.stock_gere || false,
@@ -338,7 +350,7 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
     };
   };
 
-  const modifierChamp = (produitId: string, produit: any, champ: keyof ModifsProduit, valeur: any) => {
+  const modifierChamp = <K extends keyof ModifsProduit>(produitId: string, produit: Produit, champ: K, valeur: ModifsProduit[K]) => {
     setModifs((prev) => ({
       ...prev,
       [produitId]: {
@@ -348,29 +360,41 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
     }));
   };
 
-  const sauvegarder = async (produitId: string) => {
-    const valeurs = modifs[produitId];
+  const sauvegarder = async (produit: Produit) => {
+    const valeurs = modifs[produit.id];
     if (!valeurs) return;
 
-    setSauvegardeEnCours(produitId);
+    setSauvegardeEnCours(produit.id);
     setErreur(null);
 
     const payload = valeurs.stock_gere
       ? { disponible: valeurs.disponible, stock_gere: true, stock_quantite: valeurs.stock_quantite ?? 0 }
       : { disponible: valeurs.disponible, stock_gere: false, stock_quantite: null };
 
-    const { error } = await supabase
-      .from('produits')
-      .update(payload)
-      .eq('id', produitId);
+    // Verrou optimiste : l'UPDATE ne s'applique que si le stock en base
+    // est toujours celui affiché. Sinon une commande passée entre-temps
+    // (qui a décrémenté le stock) serait silencieusement écrasée.
+    let requete = supabase.from('produits').update(payload).eq('id', produit.id);
+    requete = produit.stock_quantite == null
+      ? requete.is('stock_quantite', null)
+      : requete.eq('stock_quantite', produit.stock_quantite);
+    const { data, error } = await requete.select('id');
 
     if (error) {
       console.error('Erreur sauvegarde produit:', error);
       setErreur(`Erreur lors de la sauvegarde : ${error.message}`);
+    } else if (!data || data.length === 0) {
+      setErreur(`Le stock de « ${produit.nom} » a changé entre-temps (commande en cours). Valeurs rechargées, vérifiez puis réenregistrez.`);
+      setModifs((prev) => {
+        const copie = { ...prev };
+        delete copie[produit.id];
+        return copie;
+      });
+      onRefresh();
     } else {
       setModifs((prev) => {
         const copie = { ...prev };
-        delete copie[produitId];
+        delete copie[produit.id];
         return copie;
       });
       onRefresh();
@@ -387,7 +411,7 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
         </div>
       )}
 
-      {produits.map((produit: any) => {
+      {produits.map((produit) => {
         const valeurs = getValeur(produit);
         const aDesModifs = !!modifs[produit.id];
         const stockBas = valeurs.stock_gere && valeurs.stock_quantite !== null && valeurs.stock_quantite <= 3;
@@ -424,10 +448,14 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
                   checked={valeurs.stock_gere}
                   onChange={(e) => {
                     const geree = e.target.checked;
-                    modifierChamp(produit.id, produit, 'stock_gere', geree);
-                    if (geree && valeurs.stock_quantite === null) {
-                      modifierChamp(produit.id, produit, 'stock_quantite', 0);
-                    }
+                    setModifs((prev) => ({
+                      ...prev,
+                      [produit.id]: {
+                        ...getValeur(produit),
+                        stock_gere: geree,
+                        stock_quantite: geree ? (valeurs.stock_quantite ?? 0) : valeurs.stock_quantite,
+                      },
+                    }));
                   }}
                   className="w-4 h-4 accent-amber-600"
                 />
@@ -439,14 +467,15 @@ function GestionProduits({ produits, onRefresh }: GestionProduitsProps) {
                   type="number"
                   min={0}
                   value={valeurs.stock_quantite ?? 0}
-                  onChange={(e) => modifierChamp(produit.id, produit, 'stock_quantite', Math.max(0, Number(e.target.value)))}
+                  onChange={(e) => modifierChamp(produit.id, produit, 'stock_quantite', Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                  aria-label={`Stock de ${produit.nom}`}
                   className="w-20 bg-[#1C1712] border border-[#3D332A] text-white text-sm py-2 px-3 rounded-xl focus:outline-none focus:border-amber-500"
                 />
               )}
 
               {aDesModifs && (
                 <button
-                  onClick={() => sauvegarder(produit.id)}
+                  onClick={() => void sauvegarder(produit)}
                   disabled={sauvegardeEnCours === produit.id}
                   className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
                 >

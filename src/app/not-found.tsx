@@ -9,14 +9,14 @@ export default function NotFound() {
         <h1 className="text-4xl font-black font-serif text-stone-900 mb-2">404</h1>
         <h2 className="text-xl font-bold text-stone-800 mb-2">Page Introuvable</h2>
         <p className="text-stone-500 text-sm mb-6">
-          Oups ! La page que vous recherchez n'existe pas ou a été déplacée.
+          Oups ! La page que vous recherchez n&apos;existe pas ou a été déplacée.
         </p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-3 rounded-full transition-all shadow-md shadow-amber-600/20"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Retour à l'accueil</span>
+          <span>Retour à l&apos;accueil</span>
         </Link>
       </div>
     </div>

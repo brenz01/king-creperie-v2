@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
+/* Polices : --font-inter / --font-fraunces sont posées sur <html> par
+   next/font (cf. src/app/fonts.ts) et mappées sur les utilitaires
+   font-sans / font-serif de Tailwind. */
+@theme inline {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+}
+
 @layer base {
   :root {
-    /* Mode Clair (Côté Client / Commande / Suivi) */
+    /* Mode clair (client / commande / suivi) */
     --bg-primary: #FBF3E7;       /* Crème beurrée */
     --bg-card: #FFFFFF;
     --text-primary: #2A1B12;     /* Brun cacao */
@@ -14,12 +22,12 @@
   }
 
   .dark {
-    /* Mode Sombre (Côté Admin / Dashboard Cuisine) */
+    /* Mode sombre (admin / dashboard cuisine) */
     --bg-primary: #1C1712;
     --bg-card: #26201A;
     --text-primary: #F5EBDA;
     --text-secondary: #C4B39B;
-    --accent: #DDA15E;           /* Miel doré, plus lumineux en sombre */
+    --accent: #DDA15E;
     --accent-hover: #B8621B;
     --border-color: #3D332A;
     --success: #7FA377;
@@ -28,9 +36,20 @@
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'Sarabun', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* Supprime le flash bleu au tap sur mobile (sensation « app »). */
+    -webkit-tap-highlight-color: transparent;
   }
+
+  /* Lenis gère le défilement : pas de scroll-behavior CSS concurrent. */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 .bg-brand-cream { background-color: var(--bg-primary); }

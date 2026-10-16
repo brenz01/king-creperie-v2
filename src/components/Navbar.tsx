@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Crown, Menu as MenuIcon, X } from 'lucide-react';
+import { ShoppingBag, Crown, Menu as MenuIcon, X, Download, Share } from 'lucide-react';
+import { useInstallation } from '@/lib/pwa/install';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const installation = useInstallation();
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -51,7 +53,8 @@ export default function Navbar() {
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="md:hidden text-stone-800 hover:text-amber-700 transition-colors p-2"
-          aria-label="Menu"
+          aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
         </button>
@@ -81,6 +84,19 @@ export default function Navbar() {
             <ShoppingBag className="w-4 h-4" />
             <span>Commander</span>
           </Link>
+          {installation.mode === 'android' && (
+            <button
+              onClick={() => void installation.installer()}
+              className="flex items-center justify-center gap-2 text-amber-800 font-semibold py-2"
+            >
+              <Download className="w-4 h-4" /> Installer l&apos;app
+            </button>
+          )}
+          {installation.mode === 'ios' && (
+            <p className="flex items-center justify-center gap-1.5 text-xs text-stone-500">
+              Installer l&apos;app : <Share className="w-3.5 h-3.5" /> Partager → Sur l&apos;écran d&apos;accueil
+            </p>
+          )}
         </div>
       )}
     </header>

@@ -2,10 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { ArrowRight, Utensils } from 'lucide-react';
+import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full min-h-screen grid grid-cols-1 lg:grid-cols-2 items-stretch bg-brand-cream">
+    <section className="relative w-full min-h-[100svh] grid grid-cols-1 lg:grid-cols-2 items-stretch bg-brand-cream">
       {/* Colonne texte */}
       <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-24 lg:py-0 order-2 lg:order-1">
         <motion.div
@@ -48,22 +49,29 @@ export default function HeroSection() {
             <Utensils className="w-4 h-4" />
             <span>Voir la carte</span>
           </a>
-          <a href="/suivi" className="inline-flex items-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white font-bold px-6 py-4 rounded-lg transition-colors">
+          <Link href="/suivi" className="inline-flex items-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white font-bold px-6 py-4 rounded-lg transition-colors">
             <span>Suivre ma commande</span>
             <ArrowRight className="w-4 h-4" />
-          </a>
+          </Link>
         </motion.div>
       </div>
 
       {/* Colonne vidéo */}
       <div className="relative min-h-[340px] lg:min-h-0 order-1 lg:order-2 overflow-hidden">
+        {/* 720p sans piste audio : 0,5 Mo (WebM) / 0,7 Mo (MP4) au lieu de
+            2,9 Mo. Le poster s'affiche immédiatement (LCP) et sert de
+            repli si l'autoplay est bloqué (mode économie de données). */}
         <video
           autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
+          poster="/videos/hero-poster.jpg"
+          aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover"
         >
+          <source src="/videos/hero-bg.webm" type="video/webm" />
           <source src="/videos/hero-bg.mp4" type="video/mp4" />
         </video>
 

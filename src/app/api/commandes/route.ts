@@ -1,167 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { verifierRateLimit, extraireIp } from '@/lib/rateLimit';
+import { z } from 'zod';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifierRateLimit, extraireIp, minutesRestantes } from '@/lib/rateLimit';
+import { trouverZone } from '@/lib/zones';
+import { estPersonnalisable, MAX_EXTRAS_PAR_ARTICLE } from '@/lib/extras';
 
-// Client serveur avec la clé service_role — ne JAMAIS exposer côté client.
-// Cette clé bypass RLS entièrement : tout le contrôle d'accès et la
-// validation doivent être faits explicitement dans ce fichier.
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+// Le client service_role bypass RLS : tout le contrôle d'accès et la
+// validation sont faits explicitement dans ce fichier.
 
-const ZONES_LIVRAISON: Record<number, { nom: string; prix: number }> = {
-  1: { nom: 'Zone 1 (Almadies, Ngor, Ouakam)', prix: 1000 },
-  2: { nom: 'Zone 2 (Mermoz, Fann, Point E, Liberté 6)', prix: 1500 },
-  3: { nom: 'Zone 3 (Plateau, Yoff, Maristes, VDN)', prix: 2000 },
-};
-
-// Regex téléphone sénégalais : 9 chiffres commençant par 7,
-// avec ou sans le préfixe 221, espaces tolérés.
+// Téléphone sénégalais : 9 chiffres commençant par 7, préfixe 221 optionnel.
 const TELEPHONE_SN_REGEX = /^(?:\+?221)?[\s.-]?7[0-9](?:[\s.-]?[0-9]){7}$/;
 
-// Format UUID v4 basique — la clé d'idempotence doit être un vrai UUID
-// généré côté client (crypto.randomUUID()), pas une chaîne arbitraire.
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Retire les caractères de contrôle (affichage WhatsApp / dashboard).
+const texte = (max: number) =>
+  z
+    .string()
+    .transform((v) => v.replace(/[\x00-\x1F\x7F]/g, ' ').trim().slice(0, max));
 
-interface ItemPanier {
-  produit_id: string;
-  quantite: number;
-  extras_ids: string[]; // juste les IDs, jamais les prix — recalculés serveur
-}
-
-interface RequeteCommande {
-  client_nom: string;
-  client_telephone: string;
-  adresse_precise: string;
-  zone_id: number;
-  creneau_souhaite?: string;
-  items: ItemPanier[];
-  idempotency_key?: string;
-}
-
-function nettoyerTexte(valeur: string, maxLength: number): string {
-  return valeur
+const SchemaCommande = z.object({
+  client_nom: texte(100).pipe(z.string().min(2, 'Le nom doit contenir au moins 2 caractères.')),
+  client_telephone: z
+    .string()
     .trim()
-    .slice(0, maxLength)
-    // Retire les caractères de contrôle qui pourraient perturber
-    // l'affichage WhatsApp ou l'admin dashboard.
-    .replace(/[\x00-\x1F\x7F]/g, '');
+    .regex(TELEPHONE_SN_REGEX, 'Numéro de téléphone invalide (format sénégalais attendu, ex : 77 000 00 00).'),
+  adresse_precise: texte(300).pipe(z.string().min(3, "L'adresse doit contenir au moins 3 caractères.")),
+  zone_id: z.coerce.number().int(),
+  creneau_souhaite: texte(100).optional(),
+  items: z
+    .array(
+      z.object({
+        produit_id: z.guid('Identifiant produit invalide.'),
+        quantite: z.number().int().min(1, 'Quantité invalide (1 à 20).').max(20, 'Quantité invalide (1 à 20).'),
+        extras_ids: z
+          .array(z.string().min(1).max(50))
+          .max(MAX_EXTRAS_PAR_ARTICLE, `${MAX_EXTRAS_PAR_ARTICLE} extras maximum par article.`)
+          .default([]),
+      })
+    )
+    .min(1, 'Le panier est vide.')
+    .max(50, "Trop d'articles dans une seule commande."),
+  // Optionnelle (rétro-compatibilité) ; ignorée si ce n'est pas un UUID.
+  idempotency_key: z.guid().optional().catch(undefined),
+});
+
+// Seuils calibrés pour le CGNAT des opérateurs mobiles sénégalais :
+// beaucoup de clients partagent une même IP publique, donc le seuil IP
+// est large et la vraie limite anti-spam porte sur le numéro.
+const LIMITE_IP = { max: 30, fenetreMs: 10 * 60 * 1000 };
+const LIMITE_TELEPHONE = { max: 4, fenetreMs: 10 * 60 * 1000 };
+
+function json429(ms?: number) {
+  return NextResponse.json(
+    { error: `Trop de commandes envoyées. Réessayez dans ${minutesRestantes(ms)} minute(s).` },
+    { status: 429 }
+  );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // ------------------------------------------------------------
-    // 0. RATE LIMITING — avant tout traitement, avant même de lire
-    //    le body, pour couper court le plus tôt possible.
-    // ------------------------------------------------------------
+    // 0. Rate limit IP — avant même de lire le body.
     const ip = extraireIp(request);
-    const { autorise, reessayerDansMs } = verifierRateLimit(ip);
+    const parIp = verifierRateLimit(`cmd:ip:${ip}`, LIMITE_IP.max, LIMITE_IP.fenetreMs);
+    if (!parIp.autorise) return json429(parIp.reessayerDansMs);
 
-    if (!autorise) {
-      const minutesRestantes = Math.ceil((reessayerDansMs || 0) / 60000);
-      return NextResponse.json(
-        { error: `Trop de commandes envoyées depuis cette connexion. Réessayez dans ${minutesRestantes} minute(s).` },
-        { status: 429 }
-      );
+    let brut: unknown;
+    try {
+      brut = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
     }
 
-    const body = (await request.json()) as Partial<RequeteCommande>;
-
-    // ------------------------------------------------------------
-    // 1. VALIDATION STRICTE DES CHAMPS
-    // ------------------------------------------------------------
-    const erreurs: string[] = [];
-
-    const clientNom = typeof body.client_nom === 'string' ? nettoyerTexte(body.client_nom, 100) : '';
-    if (clientNom.length < 2) {
-      erreurs.push('Le nom doit contenir au moins 2 caractères.');
+    // 1. Validation stricte du format.
+    const parse = SchemaCommande.safeParse(brut);
+    if (!parse.success) {
+      const details = [...new Set(parse.error.issues.map((i) => i.message))];
+      return NextResponse.json({ error: 'Validation échouée', details }, { status: 400 });
     }
+    const body = parse.data;
 
-    const clientTelephone = typeof body.client_telephone === 'string' ? body.client_telephone.trim() : '';
-    if (!TELEPHONE_SN_REGEX.test(clientTelephone)) {
-      erreurs.push('Numéro de téléphone invalide (format sénégalais attendu, ex: 77 000 00 00).');
-    }
-
-    const adressePrecise = typeof body.adresse_precise === 'string' ? nettoyerTexte(body.adresse_precise, 300) : '';
-    if (adressePrecise.length < 3) {
-      erreurs.push("L'adresse doit contenir au moins 3 caractères.");
-    }
-
-    const zoneId = Number(body.zone_id);
-    const zone = ZONES_LIVRAISON[zoneId];
+    const zone = trouverZone(body.zone_id);
     if (!zone) {
-      erreurs.push('Zone de livraison invalide.');
+      return NextResponse.json({ error: 'Validation échouée', details: ['Zone de livraison invalide.'] }, { status: 400 });
     }
 
-    const creneauSouhaite = typeof body.creneau_souhaite === 'string'
-      ? nettoyerTexte(body.creneau_souhaite, 100)
-      : 'Au plus vite';
+    // 1bis. Rate limit par numéro (normalisé sur les 9 derniers chiffres).
+    const telephoneNormalise = body.client_telephone.replace(/\D/g, '').slice(-9);
+    const parTel = verifierRateLimit(`cmd:tel:${telephoneNormalise}`, LIMITE_TELEPHONE.max, LIMITE_TELEPHONE.fenetreMs);
+    if (!parTel.autorise) return json429(parTel.reessayerDansMs);
 
-    const items = Array.isArray(body.items) ? body.items : [];
-    if (items.length === 0) {
-      erreurs.push('Le panier est vide.');
-    }
-    if (items.length > 50) {
-      erreurs.push('Trop d\'articles dans une seule commande.');
-    }
+    const items = body.items.map((i) => ({ ...i, extras_ids: [...new Set(i.extras_ids)] }));
+    const supabaseAdmin = getSupabaseAdmin();
 
-    for (const [index, item] of items.entries()) {
-      if (typeof item.produit_id !== 'string' || item.produit_id.length === 0) {
-        erreurs.push(`Article #${index + 1} : identifiant produit manquant.`);
-      }
-      if (!Number.isInteger(item.quantite) || item.quantite < 1 || item.quantite > 20) {
-        erreurs.push(`Article #${index + 1} : quantité invalide (1 à 20).`);
-      }
-      if (!Array.isArray(item.extras_ids)) {
-        erreurs.push(`Article #${index + 1} : format des extras invalide.`);
-      }
-    }
-
-    // La clé d'idempotence est optionnelle (rétro-compatibilité),
-    // mais si elle est fournie, elle doit être un UUID valide —
-    // sinon on l'ignore silencieusement plutôt que de bloquer la commande.
-    const idempotencyKey = typeof body.idempotency_key === 'string' && UUID_REGEX.test(body.idempotency_key)
-      ? body.idempotency_key
-      : null;
-
-    if (erreurs.length > 0) {
-      return NextResponse.json({ error: 'Validation échouée', details: erreurs }, { status: 400 });
-    }
-
-    // ------------------------------------------------------------
-    // 2. RECHARGER LES VRAIS PRIX DEPUIS LA BASE (jamais faire
-    //    confiance à un prix envoyé par le client)
-    // ------------------------------------------------------------
+    // 2. Recharger les vrais prix depuis la base.
     const produitIds = [...new Set(items.map((i) => i.produit_id))];
     const { data: produits, error: produitsError } = await supabaseAdmin
       .from('produits')
-      .select('id, nom, prix, disponible')
+      .select('id, nom, prix, disponible, categorie')
       .in('id', produitIds);
 
-    if (produitsError) {
+    if (produitsError || !produits) {
       console.error('Erreur chargement produits:', produitsError);
       return NextResponse.json({ error: 'Erreur serveur (produits)' }, { status: 500 });
     }
-
-    const produitsMap = new Map(produits.map((p) => [p.id, p]));
+    const produitsMap = new Map(produits.map((p) => [p.id as string, p]));
 
     const extraIds = [...new Set(items.flatMap((i) => i.extras_ids))];
     const { data: extras, error: extrasError } = extraIds.length > 0
       ? await supabaseAdmin.from('extras').select('id, nom, prix, actif').in('id', extraIds)
-      : { data: [], error: null };
+      : { data: [] as Array<{ id: string; nom: string; prix: number; actif: boolean }>, error: null };
 
     if (extrasError) {
       console.error('Erreur chargement extras:', extrasError);
       return NextResponse.json({ error: 'Erreur serveur (extras)' }, { status: 500 });
     }
+    const extrasMap = new Map((extras ?? []).map((e) => [e.id as string, e]));
 
-    const extrasMap = new Map((extras || []).map((e) => [e.id, e]));
-
-    // ------------------------------------------------------------
-    // 3. VALIDER CHAQUE ITEM ET CALCULER LE TOTAL SERVEUR
-    // ------------------------------------------------------------
+    // 3. Valider chaque item et calculer le total côté serveur.
     const itemsValides: Array<{
       produit_id: string;
       nom_produit: string;
@@ -169,22 +123,18 @@ export async function POST(request: NextRequest) {
       prix_unitaire: number;
       extras: Array<{ id: string; nom: string; prix: number }>;
     }> = [];
-
     let sousTotal = 0;
 
     for (const [index, item] of items.entries()) {
       const produit = produitsMap.get(item.produit_id);
       if (!produit) {
-        return NextResponse.json(
-          { error: `Article #${index + 1} : produit introuvable.` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Article #${index + 1} : produit introuvable.` }, { status: 400 });
       }
       if (!produit.disponible) {
-        return NextResponse.json(
-          { error: `"${produit.nom}" n'est plus disponible.` },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: `« ${produit.nom} » n'est plus disponible.` }, { status: 409 });
+      }
+      if (item.extras_ids.length > 0 && !estPersonnalisable(produit.categorie)) {
+        return NextResponse.json({ error: `« ${produit.nom} » ne peut pas recevoir d'extras.` }, { status: 400 });
       }
 
       const extrasResolus: Array<{ id: string; nom: string; prix: number }> = [];
@@ -192,15 +142,14 @@ export async function POST(request: NextRequest) {
         const extra = extrasMap.get(extraId);
         if (!extra || !extra.actif) {
           return NextResponse.json(
-            { error: `Extra "${extraId}" invalide sur "${produit.nom}".` },
-            { status: 400 }
+            { error: `Un extra choisi sur « ${produit.nom} » n'est plus proposé.` },
+            { status: 409 }
           );
         }
         extrasResolus.push({ id: extra.id, nom: extra.nom, prix: extra.prix });
       }
 
-      const prixExtras = extrasResolus.reduce((sum, e) => sum + e.prix, 0);
-      const prixUnitaire = produit.prix + prixExtras;
+      const prixUnitaire = produit.prix + extrasResolus.reduce((s, e) => s + e.prix, 0);
       const nomComplet = extrasResolus.length > 0
         ? `${produit.nom} (${extrasResolus.map((e) => e.nom).join(', ')})`
         : produit.nom;
@@ -212,46 +161,39 @@ export async function POST(request: NextRequest) {
         prix_unitaire: prixUnitaire,
         extras: extrasResolus,
       });
-
       sousTotal += prixUnitaire * item.quantite;
     }
 
     const totalGeneral = sousTotal + zone.prix;
+    const creneau = body.creneau_souhaite || 'Au plus vite';
+    const adresseComplete = `${body.adresse_precise} (${zone.nom})`;
 
-    // ------------------------------------------------------------
-    // 4. TRANSACTION ATOMIQUE : commande + items, tout ou rien.
-    //    La fonction gère aussi l'idempotence : si idempotencyKey
-    //    correspond à une commande déjà créée, elle la renvoie
-    //    telle quelle au lieu d'en créer une nouvelle.
-    // ------------------------------------------------------------
+    // 4. Transaction atomique (commande + items + stock) + idempotence.
     const { data: resultat, error: rpcError } = await supabaseAdmin.rpc('creer_commande_complete', {
-      p_client_nom: clientNom,
-      p_client_telephone: clientTelephone,
-      p_adresse_livraison: `${adressePrecise} (${zone.nom})`,
-      p_creneau_souhaite: creneauSouhaite,
+      p_client_nom: body.client_nom,
+      p_client_telephone: body.client_telephone,
+      p_adresse_livraison: adresseComplete,
+      p_creneau_souhaite: creneau,
       p_total: totalGeneral,
       p_items: itemsValides,
-      p_idempotency_key: idempotencyKey,
+      p_idempotency_key: body.idempotency_key ?? null,
     });
 
     if (rpcError) {
-  console.error('Erreur creer_commande_complete:', rpcError);
-  if (rpcError.message?.includes('Stock insuffisant')) {
-    return NextResponse.json(
-      { error: 'Un des articles de votre panier vient de rentrer en rupture de stock. Retournez au menu pour vérifier.' },
-      { status: 409 }
-    );
-  }
-  return NextResponse.json({ error: 'Erreur lors de la création de la commande.' }, { status: 500 });
-}
+      console.error('Erreur creer_commande_complete:', rpcError);
+      if (rpcError.message?.includes('Stock insuffisant')) {
+        return NextResponse.json(
+          { error: 'Un des articles de votre panier vient de passer en rupture de stock. Retournez au menu pour vérifier.' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: 'Erreur lors de la création de la commande.' }, { status: 500 });
+    }
 
     const commande = Array.isArray(resultat) ? resultat[0] : resultat;
 
-    // ------------------------------------------------------------
-    // 5. RÉPONSE — le client utilise CES données pour WhatsApp,
-    //    jamais les siennes, pour éviter tout affichage incohérent
-    //    avec ce qui a réellement été enregistré.
-    // ------------------------------------------------------------
+    // 5. Réponse — le client construit le message WhatsApp avec CES
+    //    valeurs (nettoyées et recalculées), jamais avec les siennes.
     return NextResponse.json({
       id: commande.id,
       statut: commande.statut,
@@ -262,6 +204,12 @@ export async function POST(request: NextRequest) {
       total: totalGeneral,
       zone_nom: zone.nom,
       items: itemsValides,
+      client: {
+        nom: body.client_nom,
+        telephone: body.client_telephone,
+        adresse: body.adresse_precise,
+        creneau,
+      },
     });
   } catch (err) {
     console.error('Erreur inattendue /api/commandes:', err);

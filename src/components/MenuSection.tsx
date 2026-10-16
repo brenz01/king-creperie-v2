@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import PlaqueRail from './carte/PlaqueRail';
 import { estEpuise } from './carte/PlaqueItem';
 import ProductModal from './ProductModal';
+import { AvisFermeture } from './StatutBoutique';
 import { Loader2 } from 'lucide-react';
 
 const RUBRIQUES: Array<{ categorie: CategorieProduit; titre: string; court: string; unite: string }> = [
@@ -85,6 +86,7 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
         <p className="mt-3 text-kc-brume text-base max-w-md leading-relaxed">
           Glissez pour parcourir les recettes. Touchez une crêpe pour voir sa garniture et choisir vos extras.
         </p>
+        <AvisFermeture />
       </div>
 
       {rubriques.length > 1 && (

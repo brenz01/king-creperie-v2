@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { etatBoutique, phraseFermeture, type Boutique } from '@/lib/horaires';
 import { verifierRateLimit, extraireIp, minutesRestantes } from '@/lib/rateLimit';
 import { trouverZone } from '@/lib/zones';
 import { estPersonnalisable, MAX_EXTRAS_PAR_ARTICLE } from '@/lib/extras';
@@ -90,6 +91,20 @@ export async function POST(request: NextRequest) {
 
     const items = body.items.map((i) => ({ ...i, extras_ids: [...new Set(i.extras_ids)] }));
     const supabaseAdmin = getSupabaseAdmin();
+
+    // 1ter. Boutique fermée (horaires ou pause du gérant) : refus clair.
+    // Table absente (migration pas encore jouée) : on laisse passer.
+    const { data: boutique } = await supabaseAdmin
+      .from('boutique')
+      .select('horaires, fermeture_exceptionnelle, message_fermeture')
+      .eq('id', 1)
+      .maybeSingle();
+    if (boutique) {
+      const etat = etatBoutique(boutique as Boutique);
+      if (!etat.ouvert) {
+        return NextResponse.json({ error: phraseFermeture(etat), ferme: true }, { status: 409 });
+      }
+    }
 
     // 2. Recharger les vrais prix depuis la base.
     const produitIds = [...new Set(items.map((i) => i.produit_id))];

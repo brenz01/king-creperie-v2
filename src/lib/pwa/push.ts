@@ -35,14 +35,27 @@ function base64UrlVersUint8(base64: string): Uint8Array<ArrayBuffer> {
   return sortie;
 }
 
+// Évite un bouton qui tourne indéfiniment si le service worker n'est pas
+// actif ou si le service push du navigateur ne répond pas.
+function avecDelai<T>(promesse: Promise<T>, ms: number, etape: string): Promise<T> {
+  return Promise.race([
+    promesse,
+    new Promise<T>((_, rejeter) => setTimeout(() => rejeter(new Error(`Délai dépassé : ${etape}`)), ms)),
+  ]);
+}
+
 async function obtenirAbonnement(): Promise<PushSubscription> {
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await avecDelai(navigator.serviceWorker.ready, 10_000, 'service worker');
   const existant = await registration.pushManager.getSubscription();
   if (existant) return existant;
-  return registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: base64UrlVersUint8(VAPID_PUBLIC_KEY),
-  });
+  return avecDelai(
+    registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: base64UrlVersUint8(VAPID_PUBLIC_KEY),
+    }),
+    15_000,
+    'abonnement push'
+  );
 }
 
 export type ResultatPush = 'ok' | 'refuse' | 'erreur';

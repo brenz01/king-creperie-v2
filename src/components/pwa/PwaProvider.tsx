@@ -67,22 +67,24 @@ function ToastMiseAJour() {
   );
 }
 
-const sAbonnerVide = () => () => {};
+// Navigateurs intégrés (WhatsApp, Instagram…) et contextes non sécurisés :
+// pas de service worker → on n'essaie pas de l'enregistrer (évite une
+// erreur JS « reading 'waiting' » dans @serwist/window).
+// ⚠ Lu directement et non via useSyncExternalStore : SerwistProvider ne lit
+// `disable` qu'au tout premier rendu (useState). Avec un store, ce premier
+// rendu (hydratation) voyait `false` et le service worker n'était JAMAIS
+// enregistré. Sans incidence sur le rendu serveur (le provider n'affiche
+// que ses enfants), donc pas de décalage d'hydratation.
+function swIndisponible(): boolean {
+  return typeof navigator === 'undefined' || !('serviceWorker' in navigator) || navigator.serviceWorker == null;
+}
 
 export default function PwaProvider({ children }: { children: React.ReactNode }) {
-  // Navigateurs intégrés (WhatsApp, Instagram…) et contextes non sécurisés :
-  // pas de service worker → on n'essaie pas de l'enregistrer (évite une
-  // erreur JS « reading 'waiting' » dans @serwist/window).
-  const swDisponible = useSyncExternalStore(
-    sAbonnerVide,
-    () => 'serviceWorker' in navigator && navigator.serviceWorker != null,
-    () => false
-  );
   return (
     <SerwistProvider
       swUrl="/serwist/sw.js"
       // En dev, le SW gênerait le hot reload ; on le teste via `pnpm build && pnpm start`.
-      disable={process.env.NODE_ENV === 'development' || !swDisponible}
+      disable={process.env.NODE_ENV === 'development' || swIndisponible()}
       reloadOnOnline={false}
       cacheOnNavigation={false}
     >

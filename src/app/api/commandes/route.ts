@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const produitIds = [...new Set(items.map((i) => i.produit_id))];
     const { data: produits, error: produitsError } = await supabaseAdmin
       .from('produits')
-      .select('id, nom, prix, disponible, categorie')
+      .select('id, nom, prix, disponible, categorie, stock_gere, stock_quantite')
       .in('id', produitIds);
 
     if (produitsError || !produits) {
@@ -187,6 +187,30 @@ export async function POST(request: NextRequest) {
     const creneau = body.creneau_souhaite || 'Au plus vite';
     const adresseComplete = `${body.adresse_precise} (${zone.nom})`;
 
+    // 3 bis. Stock suivi : la quantité demandée (toutes lignes d'un même
+    //    produit confondues, avec ou sans extras) ne peut dépasser les
+    //    portions restantes. Contrôle explicite, indépendant de la RPC ;
+    //    la RPC reste le verrou final contre deux commandes simultanées.
+    const demandes = new Map<string, number>();
+    for (const item of items) demandes.set(item.produit_id, (demandes.get(item.produit_id) ?? 0) + item.quantite);
+    for (const [id, demande] of demandes) {
+      const p = produitsMap.get(id)!;
+      if (p.stock_gere !== true || p.stock_quantite == null) continue;
+      const reste = Math.max(0, p.stock_quantite);
+      if (demande > reste) {
+        return NextResponse.json(
+          {
+            error:
+              reste === 0
+                ? `« ${p.nom} » vient d’être épuisé : votre panier a été mis à jour, vérifiez-le puis validez à nouveau.`
+                : `Il ne reste que ${reste} « ${p.nom} » (vous en demandez ${demande}) : votre panier a été ajusté, vérifiez-le puis validez à nouveau.`,
+            stock: true,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // 4. Transaction atomique (commande + items + stock) + idempotence.
     const { data: resultat, error: rpcError } = await supabaseAdmin.rpc('creer_commande_complete', {
       p_client_nom: body.client_nom,
@@ -202,7 +226,10 @@ export async function POST(request: NextRequest) {
       console.error('Erreur creer_commande_complete:', rpcError);
       if (rpcError.message?.includes('Stock insuffisant')) {
         return NextResponse.json(
-          { error: 'Un des articles de votre panier vient de passer en rupture de stock. Retournez au menu pour vérifier.' },
+          {
+            error: 'Un des articles de votre panier vient de passer en rupture de stock : votre panier a été mis à jour, vérifiez-le puis validez à nouveau.',
+            stock: true,
+          },
           { status: 409 }
         );
       }

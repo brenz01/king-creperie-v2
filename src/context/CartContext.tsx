@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react';
 import type { Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
+import { QUANTITE_MAX_LIGNE, stockCommandable } from '@/lib/produit';
 
 export interface CartItem {
   produit: Produit;
@@ -69,10 +70,22 @@ function sAbonner(f: () => void) {
   };
 }
 
+// Quantité maximale de la ligne `cle` : 20, et jamais plus que le stock
+// restant une fois comptées les autres lignes du même produit.
+function plafondLigne(panier: CartItem[], produit: Produit, cle: string): number {
+  const stock = stockCommandable(produit);
+  if (stock === null) return QUANTITE_MAX_LIGNE;
+  const autres = panier
+    .filter((i) => i.produit.id === produit.id && cleLigne(i.produit) !== cle)
+    .reduce((s, i) => s + i.quantite, 0);
+  return Math.max(0, Math.min(QUANTITE_MAX_LIGNE, stock - autres));
+}
+
 // Résultat d'une resynchronisation du panier avec le catalogue réel.
 export interface ChangementsPanier {
   retires: string[]; // produits (ou extras) qui ne sont plus disponibles
   prixModifies: string[]; // lignes dont le prix a changé depuis l'ajout
+  quantitesReduites: string[]; // lignes ramenées au stock restant
 }
 
 // Recalcule chaque ligne à partir du catalogue frais : le panier est
@@ -88,6 +101,7 @@ export function reconcilierPanier(
   const extrasMap = new Map(extras.map((e) => [e.id, e]));
   const retires: string[] = [];
   const prixModifies: string[] = [];
+  const quantitesReduites: string[] = [];
   const suivant: CartItem[] = [];
 
   for (const item of panier) {
@@ -107,24 +121,36 @@ export function reconcilierPanier(
     const prix = frais.prix + liste.reduce((s, e) => s + e.prix, 0);
     const nom = liste.length > 0 ? `${frais.nom} (${liste.map((e) => e.nom).join(', ')})` : frais.nom;
     if (prix !== item.produit.prix) prixModifies.push(nom);
-    suivant.push({
-      ...item,
-      produit: {
-        ...frais,
-        nom,
-        prix,
-        prixBase: frais.prix,
-        extrasChoisis: liste.length > 0 ? liste.map((e) => ({ id: e.id, nom: e.nom, prix: e.prix })) : undefined,
-      },
-    });
+    const produit: Produit = {
+      ...frais,
+      nom,
+      prix,
+      prixBase: frais.prix,
+      extrasChoisis: liste.length > 0 ? liste.map((e) => ({ id: e.id, nom: e.nom, prix: e.prix })) : undefined,
+    };
+    // Stock passé sous la quantité du panier (autre client, staff) :
+    // la ligne est ramenée à ce qui reste, ou retirée s'il ne reste rien.
+    const plafond = plafondLigne(suivant, produit, cleLigne(produit));
+    if (plafond === 0) {
+      retires.push(nom);
+      continue;
+    }
+    if (item.quantite > plafond) quantitesReduites.push(nom);
+    suivant.push({ ...item, quantite: Math.min(item.quantite, plafond), produit });
   }
-  return { panier: suivant, changements: { retires, prixModifies } };
+  return { panier: suivant, changements: { retires, prixModifies, quantitesReduites } };
 }
+
+// Stock le plus récent connu (celui de la carte affichée) reporté sur la ligne.
+const stockDe = (p: Produit) => ({ disponible: p.disponible, stock_gere: p.stock_gere, stock_quantite: p.stock_quantite });
 
 interface CartContextType {
   cart: CartItem[];
   synchroniser: (produits: Produit[], extras: readonly Extra[]) => ChangementsPanier;
-  addToCart: (produit: Produit, quantite?: number) => void;
+  /** Ajoute au plus ce que le stock permet ; renvoie la quantité réellement ajoutée. */
+  addToCart: (produit: Produit, quantite?: number) => number;
+  /** Quantité maximale possible pour la ligne de ce produit (stock et 20). */
+  plafond: (produit: Produit) => number;
   removeFromCart: (cle: string) => void;
   updateQuantity: (cle: string, delta: number) => void;
   clearCart: () => void;
@@ -141,12 +167,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const cle = cleLigne(produit);
     const actuel = lire();
     const existant = actuel.find((i) => cleLigne(i.produit) === cle);
+    const max = plafondLigne(actuel, produit, cle);
+    const avant = existant?.quantite ?? 0;
+    const apres = Math.min(max, avant + Math.max(0, quantite));
+    if (apres <= avant) return 0;
     ecrire(
       existant
-        ? actuel.map((i) => (i === existant ? { ...i, quantite: Math.min(20, i.quantite + quantite) } : i))
-        : [...actuel, { produit, quantite: Math.min(20, quantite) }]
+        ? actuel.map((i) => (i === existant ? { ...i, produit: { ...i.produit, ...stockDe(produit) }, quantite: apres } : i))
+        : [...actuel, { produit, quantite: apres }]
     );
+    return apres - avant;
   }, []);
+
+  const plafond = useCallback((produit: Produit) => plafondLigne(cart, produit, cleLigne(produit)), [cart]);
 
   const removeFromCart = useCallback((cle: string) => {
     ecrire(lire().filter((i) => cleLigne(i.produit) !== cle));
@@ -155,7 +188,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = useCallback((cle: string, delta: number) => {
     ecrire(
       lire()
-        .map((i) => (cleLigne(i.produit) === cle ? { ...i, quantite: Math.min(20, i.quantite + delta) } : i))
+        .map((i, _, tout) =>
+          cleLigne(i.produit) === cle
+            ? { ...i, quantite: delta > 0 ? Math.min(plafondLigne(tout, i.produit, cle), i.quantite + delta) : i.quantite + delta }
+            : i
+        )
         .filter((i) => i.quantite > 0)
     );
   }, []);
@@ -167,6 +204,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const { panier, changements } = reconcilierPanier(actuel, produits, extras);
     const modifie =
       changements.retires.length > 0 ||
+      changements.quantitesReduites.length > 0 ||
       panier.some((l, i) => l.produit.prix !== actuel[i]?.produit.prix || l.produit.nom !== actuel[i]?.produit.nom);
     if (modifie) ecrire(panier);
     return changements;
@@ -176,6 +214,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       cart,
       addToCart,
+      plafond,
       removeFromCart,
       updateQuantity,
       clearCart,
@@ -183,7 +222,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       totalCount: cart.reduce((s, i) => s + i.quantite, 0),
       totalAmount: cart.reduce((s, i) => s + i.produit.prix * i.quantite, 0),
     }),
-    [cart, addToCart, removeFromCart, updateQuantity, clearCart, synchroniser]
+    [cart, addToCart, plafond, removeFromCart, updateQuantity, clearCart, synchroniser]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

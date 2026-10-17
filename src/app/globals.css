@@ -101,6 +101,8 @@
   to   { opacity: 1; transform: none; }
 }
 @keyframes kc-fondu { from { opacity: 0; } to { opacity: 1; } }
+/* Panneau latéral de KC Staff (fiche produit) : arrive de la droite. */
+@keyframes kc-panneau { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 /* Nouvelle commande (staff) : halo répété trois fois, signal fonctionnel. */
 @keyframes kc-surligne {
   0%   { opacity: 1; transform: scale(1); }

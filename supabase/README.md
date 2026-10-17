@@ -17,6 +17,8 @@ d'octobre 2026** et les requêtes d'audit.
 | 4 | `migrations/20261015120100_push_notifications.sql` | Table `push_subscriptions` + trigger `pg_net` vers `/api/push/dispatch`. Sans effet tant que l'étape 5 n'est pas faite. |
 | 5 | `sql/configurer_secrets_push.sql` | URL + secret dans Vault (remplacer `<SECRET>` dans l'éditeur, **ne pas commiter**). |
 | 6 | `sql/01_audit_en_une_requete.sql` | Rejouer et comparer. |
+| 7 | `migrations/20261016150000_boutique_horaires.sql` | Horaires et pause des commandes (KC Staff → Boutique). Déjà en place si l’écran Boutique fonctionne ; la rejouer est sans effet. |
+| 8 | `migrations/20261017200000_gestion_carte.sql` | **Gestion de la carte depuis KC Staff** : catégories `gaufre` et `autre`, ajout/suppression de produits réservés au staff, historique des commandes conservé à la suppression (`produit_id` → NULL), dépôt des photos dans le bucket `produits` (staff seulement, images ≤ 5 Mo). **À exécuter avant de déployer le code** qui l'utilise. |
 
 ### Constats de l'audit de production (16/10/2026)
 

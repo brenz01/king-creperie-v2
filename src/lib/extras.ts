@@ -1,4 +1,5 @@
 import type { CategorieProduit } from '@/types';
+import { CATEGORIES_PRODUIT } from '@/lib/categories';
 
 export interface Extra {
   id: string;
@@ -9,7 +10,9 @@ export interface Extra {
 // Catégories sur lesquelles des extras peuvent être ajoutés.
 // Appliqué côté UI (bouton « Personnaliser ») ET côté serveur
 // (/api/commandes refuse un extra sur une boisson).
-export const CATEGORIES_PERSONNALISABLES: readonly CategorieProduit[] = ['salee', 'sucree'];
+export const CATEGORIES_PERSONNALISABLES: readonly CategorieProduit[] = CATEGORIES_PRODUIT.filter((c) => c.personnalisable).map(
+  (c) => c.id,
+);
 
 export const MAX_EXTRAS_PAR_ARTICLE = 10;
 

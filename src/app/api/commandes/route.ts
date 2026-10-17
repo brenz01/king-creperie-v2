@@ -143,7 +143,11 @@ export async function POST(request: NextRequest) {
     for (const [index, item] of items.entries()) {
       const produit = produitsMap.get(item.produit_id);
       if (!produit) {
-        return NextResponse.json({ error: `Article #${index + 1} : produit introuvable.` }, { status: 400 });
+        // Produit supprimé de la carte depuis l'ajout au panier (KC Staff).
+        return NextResponse.json(
+          { error: `L’article n° ${index + 1} de votre panier n’est plus à la carte : retirez-le, puis validez à nouveau.` },
+          { status: 409 },
+        );
       }
       if (!produit.disponible) {
         return NextResponse.json({ error: `« ${produit.nom} » n'est plus disponible.` }, { status: 409 });

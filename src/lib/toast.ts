@@ -5,7 +5,8 @@ import { useSyncExternalStore } from 'react';
 // Messages courts de confirmation (« Crêpe ajoutée au panier. »).
 // genre « panier » : confirmation d'ajout, affichée DANS la barre panier
 // (là où regarde le client) plutôt que dans une bulle qui recouvre la page.
-type Genre = 'info' | 'panier';
+// genre « limite » : information sans coche (ex. stock restant atteint).
+type Genre = 'info' | 'panier' | 'limite';
 let message: { id: number; texte: string; genre: Genre } | null = null;
 let minuteur: ReturnType<typeof setTimeout> | undefined;
 const abonnes = new Set<() => void>();

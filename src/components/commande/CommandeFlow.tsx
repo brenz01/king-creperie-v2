@@ -114,7 +114,7 @@ interface CommandeFlowProps {
 }
 
 export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
-  const { cart, totalAmount, updateQuantity, removeFromCart, clearCart, synchroniser } = useCart();
+  const { cart, totalAmount, updateQuantity, removeFromCart, clearCart, synchroniser, plafond } = useCart();
   const [etape, setEtape] = useState<Etape>('panier');
   const [form, setForm] = useState<Formulaire>(lireFormulaire);
   const [majPanier, setMajPanier] = useState<ChangementsPanier | null>(null);
@@ -141,7 +141,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
     void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
       if (!actif || !p) return;
       const ch = synchroniser(p, e);
-      if (ch.retires.length > 0 || ch.prixModifies.length > 0) setMajPanier(ch);
+      if (ch.retires.length > 0 || ch.prixModifies.length > 0 || ch.quantitesReduites.length > 0) setMajPanier(ch);
     });
     return () => {
       actif = false;
@@ -250,8 +250,17 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
 
     const data: unknown = await res.json().catch(() => null);
     if (!res.ok || !data) {
-      const d = (data ?? {}) as { error?: string; details?: string[]; ferme?: boolean };
+      const d = (data ?? {}) as { error?: string; details?: string[]; ferme?: boolean; stock?: boolean };
       if (d.ferme) void rafraichirBoutique();
+      // Stock dépassé (vendu entre-temps) : le panier est recalé sur le
+      // stock réel, le client voit ce qui a changé et peut renvoyer.
+      if (d.stock) {
+        void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
+          if (!p) return;
+          const ch = synchroniser(p, e);
+          if (ch.retires.length > 0 || ch.prixModifies.length > 0 || ch.quantitesReduites.length > 0) setMajPanier(ch);
+        });
+      }
       const texte =
         (Array.isArray(d.details) ? d.details.join(' ') : d.error) || 'La commande n’a pas pu être enregistrée. Réessayez.';
       return fin({ type: res.status >= 500 ? 'serveur' : 'validation', texte });
@@ -499,6 +508,9 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
             <p className="font-semibold">Votre panier a été mis à jour</p>
             {majPanier.retires.length > 0 && <p className="mt-1">Plus disponible, retiré : {majPanier.retires.join(', ')}.</p>}
             {majPanier.prixModifies.length > 0 && <p className="mt-1">Prix actualisé : {majPanier.prixModifies.join(', ')}.</p>}
+            {majPanier.quantitesReduites.length > 0 && (
+              <p className="mt-1">Quantité ramenée au stock restant : {majPanier.quantitesReduites.join(', ')}.</p>
+            )}
           </div>
         )}
 
@@ -538,8 +550,10 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
                       <button
                         type="button"
                         aria-label={`Une ${nomBase} de plus`}
+                        aria-disabled={item.quantite >= plafond(item.produit) || undefined}
+                        title={item.quantite >= plafond(item.produit) ? 'Stock restant atteint' : undefined}
                         onClick={() => updateQuantity(cle, 1)}
-                        className="appui w-11 h-11 rounded-md hover:bg-white flex items-center justify-center text-stone-700"
+                        className="appui w-11 h-11 rounded-md hover:bg-white flex items-center justify-center text-stone-700 aria-disabled:opacity-35 aria-disabled:cursor-not-allowed"
                       >
                         <Plus className="w-4 h-4" />
                       </button>

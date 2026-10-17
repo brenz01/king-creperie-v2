@@ -6,8 +6,8 @@ import { Minus, Plus } from 'lucide-react';
 import type { Produit } from '@/types';
 import { cleLigne, useCart } from '@/context/CartContext';
 import { estPersonnalisable } from '@/lib/extras';
-import { estEpuise, portionsRestantes, prixF } from '@/lib/produit';
-import { confirmerAjout } from '@/lib/toast';
+import { estEpuise, messageStockAtteint, portionsRestantes, prixF, stockCommandable } from '@/lib/produit';
+import { afficherToast, confirmerAjout } from '@/lib/toast';
 import { envolerVersPanier } from '@/lib/volPanier';
 import InfoBulle from './ui/InfoBulle';
 
@@ -24,7 +24,7 @@ interface ProductCardProps {
 // la photo d'une crêpe ouvre la fiche (extras) ; le rond « + » ajoute tout
 // de suite, la photo file vers le panier, et le rond devient un compteur.
 export default function ProductCard({ produit, onOuvrir, rang = 0, prioritaire = false }: ProductCardProps) {
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, plafond } = useCart();
   const photo = useRef<HTMLDivElement>(null);
   const epuise = estEpuise(produit);
   const restantes = portionsRestantes(produit);
@@ -34,8 +34,15 @@ export default function ProductCard({ produit, onOuvrir, rang = 0, prioritaire =
   const cle = cleLigne(produit);
   const quantite = cart.find((i) => cleLigne(i.produit) === cle)?.quantite ?? 0;
 
+  // Stock suivi : le « + » s'arrête aux portions restantes.
+  const stock = stockCommandable(produit);
+  const complet = quantite >= plafond(produit);
+
   const ajouter = () => {
-    addToCart(produit);
+    if (addToCart(produit) === 0) {
+      afficherToast(stock !== null ? messageStockAtteint(stock) : 'Quantité maximale atteinte', 2600, 'limite');
+      return;
+    }
     confirmerAjout('Ajouté au panier');
     envolerVersPanier(photo.current);
   };
@@ -119,12 +126,13 @@ export default function ProductCard({ produit, onOuvrir, rang = 0, prioritaire =
                 <output key={quantite} className="kc-fondu min-w-5 text-center font-semibold tabular-nums" aria-live="polite">
                   {quantite}
                 </output>
-                <InfoBulle libelle="Ajouter une" cote="haut">
+                <InfoBulle libelle={complet ? (stock !== null ? messageStockAtteint(stock) : 'Maximum atteint') : 'Ajouter une'} cote="haut">
                   <button
                     type="button"
                     onClick={ajouter}
                     aria-label={`Une ${produit.nom} de plus`}
-                    className="appui w-11 h-11 rounded-full flex items-center justify-center text-amber-300"
+                    aria-disabled={complet || undefined}
+                    className={`appui w-11 h-11 rounded-full flex items-center justify-center ${complet ? 'text-white/35' : 'text-amber-300'}`}
                   >
                     <Plus className="w-4 h-4" strokeWidth={2.5} />
                   </button>

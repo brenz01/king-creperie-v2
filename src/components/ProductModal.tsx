@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
-import { useCart } from '@/context/CartContext';
+import { cleLigne, useCart } from '@/context/CartContext';
 import { motion } from 'framer-motion';
 import { X, Plus, Minus, Check, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { confirmerAjout } from '@/lib/toast';
 import { urlPartage } from '@/lib/whatsapp';
-import { prixF } from '@/lib/produit';
+import { messageStockAtteint, prixF, stockCommandable } from '@/lib/produit';
 import { useFocusPiege } from '@/lib/useFocusPiege';
 import InfoBulle from './ui/InfoBulle';
 import { articleDe } from '@/lib/categories';
@@ -24,7 +24,7 @@ interface ProductModalProps {
 // sur ordinateur, sur un voile cacao flouté. Extras, quantité, et un seul
 // bouton qui affiche le total.
 export default function ProductModal({ produit, extras, onClose }: ProductModalProps) {
-  const { addToCart } = useCart();
+  const { addToCart, cart, plafond } = useCart();
   const [selection, setSelection] = useState<Extra[]>([]);
   const [quantite, setQuantite] = useState(1);
   const fermer = useRef<HTMLButtonElement>(null);
@@ -48,25 +48,31 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
     setSelection((prev) => (prev.some((e) => e.id === extra.id) ? prev.filter((e) => e.id !== extra.id) : [...prev, extra]));
 
   const prixUnitaire = produit.prix + selection.reduce((s, e) => s + e.prix, 0);
-  const total = prixUnitaire * quantite;
+  const nomComplet = selection.length > 0 ? `${produit.nom} (${selection.map((s) => s.nom).join(', ')})` : produit.nom;
+  const ligne: Produit = {
+    ...produit,
+    nom: nomComplet,
+    prix: prixUnitaire,
+    prixBase: produit.prix,
+    extrasChoisis: selection.map((s) => ({ id: s.id, nom: s.nom, prix: s.prix })),
+  };
+  // Stock suivi : on ne propose pas plus que les portions restantes,
+  // déduction faite de ce qui est déjà dans le panier (toutes lignes).
+  const stock = stockCommandable(produit);
+  const dejaAuPanier = cart.find((i) => cleLigne(i.produit) === cleLigne(ligne))?.quantite ?? 0;
+  const ajoutable = Math.max(0, plafond(ligne) - dejaAuPanier);
+  const qte = Math.max(1, Math.min(quantite, ajoutable));
+  const total = prixUnitaire * qte;
+  const stockAtteint = produit.disponible && ajoutable === 0;
 
   const ajouter = () => {
-    if (!produit.disponible) return;
-    const nomComplet = selection.length > 0 ? `${produit.nom} (${selection.map((s) => s.nom).join(', ')})` : produit.nom;
-    addToCart(
-      {
-        ...produit,
-        nom: nomComplet,
-        prix: prixUnitaire,
-        prixBase: produit.prix,
-        extrasChoisis: selection.map((s) => ({ id: s.id, nom: s.nom, prix: s.prix })),
-      },
-      quantite,
-    );
+    if (!produit.disponible || stockAtteint) return;
+    const ajoutees = addToCart(ligne, qte);
+    if (ajoutees === 0) return;
     const nom = articleDe(produit.categorie);
     confirmerAjout(
-      quantite > 1
-        ? `${quantite} ${nom.des} ajouté${nom.un === 'article' ? 's' : 'es'}`
+      ajoutees > 1
+        ? `${ajoutees} ${nom.des} ajouté${nom.un === 'article' ? 's' : 'es'}`
         : `${nom.un[0].toUpperCase()}${nom.un.slice(1)} ajouté${nom.un === 'article' ? '' : 'e'}`,
     );
     onClose();
@@ -170,24 +176,32 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
           )}
 
           <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-            <span className="text-sm font-semibold text-stone-700">Quantité</span>
+            <span className="text-sm font-semibold text-stone-700">
+              Quantité
+              {stock !== null && stock <= 3 && produit.disponible && (
+                <span className="block text-xs font-medium text-amber-700 mt-0.5" role="status">
+                  {stockAtteint ? messageStockAtteint(stock) : `Plus que ${stock} en stock`}
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-3 bg-stone-100 p-1 rounded-lg">
               <button
                 type="button"
                 aria-label="Une de moins"
-                onClick={() => setQuantite((q) => Math.max(1, q - 1))}
+                onClick={() => setQuantite(Math.max(1, qte - 1))}
                 className="appui w-11 h-11 rounded-md bg-white text-stone-800 flex items-center justify-center border border-stone-200 hover:bg-stone-50"
               >
                 <Minus className="w-4 h-4" />
               </button>
               <output className="w-6 text-center font-semibold text-stone-900 tabular-nums" aria-live="polite">
-                {quantite}
+                {qte}
               </output>
               <button
                 type="button"
                 aria-label="Une de plus"
-                onClick={() => setQuantite((q) => Math.min(20, q + 1))}
-                className="appui w-11 h-11 rounded-md bg-white text-stone-800 flex items-center justify-center border border-stone-200 hover:bg-stone-50"
+                aria-disabled={qte >= ajoutable || undefined}
+                onClick={() => setQuantite(Math.min(ajoutable, qte + 1))}
+                className="appui w-11 h-11 rounded-md bg-white text-stone-800 flex items-center justify-center border border-stone-200 hover:bg-stone-50 aria-disabled:opacity-40 aria-disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -199,10 +213,10 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
           <button
             type="button"
             onClick={ajouter}
-            disabled={!produit.disponible}
+            disabled={!produit.disponible || stockAtteint}
             className="appui w-full bg-stone-900 hover:bg-amber-700 text-white font-semibold py-4 rounded-xl flex items-center justify-between px-6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>{produit.disponible ? 'Ajouter au panier' : 'Indisponible'}</span>
+            <span>{!produit.disponible ? 'Indisponible' : stockAtteint ? 'Déjà tout au panier' : 'Ajouter au panier'}</span>
             <motion.span
               key={total}
               initial={{ opacity: 0.4, y: -4 }}

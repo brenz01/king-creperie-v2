@@ -10,6 +10,7 @@ import ProductCard from './ProductCard';
 import CategoryTabs, { CATEGORIES, type IdCategorie } from './CategoryTabs';
 import ProductModal from './ProductModal';
 import { AvisFermeture } from './StatutBoutique';
+import { ORDRE_CATEGORIES } from '@/lib/categories';
 
 interface MenuSectionProps {
   // Rendu serveur (SEO + affichage immédiat).
@@ -17,7 +18,7 @@ interface MenuSectionProps {
   extrasInitiaux: Extra[];
 }
 
-const ORDRE: CategorieProduit[] = ['salee', 'sucree', 'boisson'];
+const ORDRE: readonly CategorieProduit[] = ORDRE_CATEGORIES;
 
 // Par rubrique, les produits disponibles d'abord, les épuisés à la fin.
 function trier(produits: Produit[]): Produit[] {

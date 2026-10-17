@@ -161,6 +161,7 @@ function initialiser() {
     rpcLog: [],
     panneProduits: false,
     lecturesEnPanne: 0,
+    photos: new Map(), // chemin dans le bucket « produits » → { type, octets }
     boutique: { horaires: tousLesJours([TOUJOURS]), fermeture_exceptionnelle: false, message_fermeture: null },
   };
 }
@@ -187,7 +188,7 @@ const filtreIn = (u) => {
 };
 const filtreEq = (u) => (u.searchParams.get('id') || '').replace(/^eq\./, '');
 
-function traiter(req, res, corps) {
+function traiter(req, res, corps, octets) {
   const u = new URL(req.url, 'http://x');
   const json = () => (corps ? JSON.parse(corps) : {});
   const e = etat;
@@ -216,7 +217,50 @@ function traiter(req, res, corps) {
   if (u.pathname.startsWith('/img/')) return envoyer(res, 200, IMAGE, 'image/png');
 
   // --- PostgREST ------------------------------------------------------
+  // --- Storage (bucket public « produits ») ---------------------------
+  if (u.pathname.startsWith('/storage/v1/object/public/produits/')) {
+    const ph = e.photos.get(decodeURIComponent(u.pathname.slice('/storage/v1/object/public/produits/'.length)));
+    return ph ? envoyer(res, 200, ph.octets, ph.type) : envoyer(res, 404, { message: 'Object not found' });
+  }
+  if (u.pathname.startsWith('/storage/v1/object/produits/') && req.method === 'POST') {
+    const chemin = decodeURIComponent(u.pathname.slice('/storage/v1/object/produits/'.length));
+    if (!req.headers.authorization?.includes('.')) return envoyer(res, 403, { statusCode: '403', message: 'new row violates row-level security policy' });
+    e.photos.set(chemin, { type: req.headers['content-type'] || 'application/octet-stream', octets });
+    return envoyer(res, 200, { Key: `produits/${chemin}`, Id: chemin });
+  }
+  if (u.pathname === '/storage/v1/object/produits' && req.method === 'DELETE') {
+    const supprimees = (json().prefixes ?? []).filter((c) => e.photos.delete(c));
+    return envoyer(res, 200, supprimees.map((name) => ({ name })));
+  }
+
+  // --- Staff (RLS : une ligne seulement pour un membre du staff) ------
+  if (u.pathname === '/rest/v1/staff') {
+    const jeton = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    return envoyer(res, 200, jeton.split('.').length === 3 ? [{ user_id: 'u1' }] : []);
+  }
+
   if (u.pathname === '/rest/v1/produits') {
+    const CATEGORIES = ['salee', 'sucree', 'gaufre', 'boisson', 'autre'];
+    const refuse = (p) =>
+      (p.categorie !== undefined && !CATEGORIES.includes(p.categorie)) || (p.prix !== undefined && !(p.prix > 0));
+    if (req.method === 'POST') {
+      const lignes = [].concat(json());
+      if (lignes.some(refuse)) return envoyer(res, 400, { code: '23514', message: 'new row for relation "produits" violates check constraint' });
+      const ajoutes = lignes.map((l) => ({ id: crypto.randomUUID(), description: null, image_url: null, disponible: true, stock_gere: false, stock_quantite: null, ...l }));
+      e.produits.push(...ajoutes);
+      return envoyer(res, 201, ajoutes.map((p) => ({ id: p.id })));
+    }
+    if (req.method === 'DELETE') {
+      const i = e.produits.findIndex((x) => x.id === filtreEq(u));
+      if (i < 0) return envoyer(res, 200, []);
+      const [p] = e.produits.splice(i, 1);
+      // ON DELETE SET NULL : l'historique des commandes garde nom et prix.
+      for (const c of e.commandes.values()) for (const it of c.commande_items ?? []) if (it.produit_id === p.id) it.produit_id = null;
+      return envoyer(res, 200, [{ id: p.id }]);
+    }
+    if (req.method === 'PATCH' && refuse(json())) {
+      return envoyer(res, 400, { code: '23514', message: 'new row for relation "produits" violates check constraint' });
+    }
     if (req.method === 'PATCH') {
       const p = e.produits.find((x) => x.id === filtreEq(u));
       if (!p) return envoyer(res, 200, []);
@@ -303,11 +347,12 @@ function traiter(req, res, corps) {
 http
   .createServer((req, res) => {
     if (req.method === 'OPTIONS') return envoyer(res, 204, {});
-    let corps = '';
-    req.on('data', (c) => (corps += c));
+    const morceaux = [];
+    req.on('data', (c) => morceaux.push(c));
     req.on('end', () => {
       try {
-        traiter(req, res, corps);
+        const octets = Buffer.concat(morceaux);
+        traiter(req, res, octets.toString('utf8'), octets);
       } catch (err) {
         envoyer(res, 500, { message: String(err) });
       }

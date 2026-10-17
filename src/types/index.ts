@@ -1,4 +1,4 @@
-export type CategorieProduit = 'salee' | 'sucree' | 'boisson';
+export type CategorieProduit = 'salee' | 'sucree' | 'gaufre' | 'boisson' | 'autre';
 export type StatutCommande = 'recue' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 
 export interface ExtraChoisi {

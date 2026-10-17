@@ -1,10 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import type { CategorieProduit } from '@/types';
 import InfoBulle from './ui/InfoBulle';
+import { CATEGORIES_PRODUIT } from '@/lib/categories';
 
 export type IdCategorie = 'tout' | CategorieProduit;
 
@@ -13,11 +14,12 @@ export interface Category {
   nom: string;
 }
 
+// Seules les rubriques qui contiennent au moins un produit sont affichées
+// (filtrage dans MenuSection) : « Gaufres » ou « Autres » n'apparaissent
+// qu'une fois un premier produit ajouté depuis KC Staff.
 export const CATEGORIES: Category[] = [
   { id: 'tout', nom: 'Tout' },
-  { id: 'salee', nom: 'Salées' },
-  { id: 'sucree', nom: 'Sucrées' },
-  { id: 'boisson', nom: 'Boissons' },
+  ...CATEGORIES_PRODUIT.map((c) => ({ id: c.id, nom: c.onglet })),
 ];
 
 interface CategoryTabsProps {
@@ -42,6 +44,29 @@ export default function CategoryTabs({
   onRechercheOuverte,
 }: CategoryTabsProps) {
   const champ = useRef<HTMLInputElement>(null);
+  // Plus de rubriques que de place (téléphone) : la barre défile. Un fondu
+  // au bord signale les rubriques cachées, et la rubrique touchée se recentre.
+  const barre = useRef<HTMLDivElement>(null);
+  const [cache, setCache] = useState({ gauche: false, droite: false });
+  const mesurer = useCallback(() => {
+    const b = barre.current;
+    if (!b) return;
+    setCache({ gauche: b.scrollLeft > 4, droite: b.scrollLeft + b.clientWidth < b.scrollWidth - 4 });
+  }, []);
+  useEffect(() => {
+    const b = barre.current;
+    if (!b) return;
+    mesurer();
+    const obs = new ResizeObserver(mesurer);
+    obs.observe(b);
+    return () => obs.disconnect();
+  }, [mesurer, categories.length, rechercheOuverte]);
+  const masque =
+    cache.gauche || cache.droite
+      ? `linear-gradient(to right, ${cache.gauche ? 'transparent 0, black 1.75rem' : 'black 0'}, ${
+          cache.droite ? 'black calc(100% - 1.75rem), transparent 100%' : 'black 100%'
+        })`
+      : undefined;
 
   return (
     <div className="verre-clair sticky top-[calc(4rem+env(safe-area-inset-top))] z-30 bg-creme/90 backdrop-blur-md border-b border-stone-300/80">
@@ -67,7 +92,14 @@ export default function CategoryTabs({
             </span>
           </label>
         ) : (
-          <div role="group" aria-label="Catégories" className="flex-1 min-w-0 overflow-x-auto scrollbar-none flex gap-0.5 sm:gap-1.5">
+          <div
+            ref={barre}
+            role="group"
+            aria-label="Catégories"
+            onScroll={mesurer}
+            style={{ maskImage: masque, WebkitMaskImage: masque }}
+            className="flex-1 min-w-0 overflow-x-auto scrollbar-none flex gap-0.5 sm:gap-1.5"
+          >
             {categories.map((cat) => {
               const actif = activeCategory === cat.id;
               return (
@@ -75,7 +107,10 @@ export default function CategoryTabs({
                   key={cat.id}
                   type="button"
                   aria-pressed={actif}
-                  onClick={() => onSelectCategory(cat.id)}
+                  onClick={(e) => {
+                    onSelectCategory(cat.id);
+                    e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+                  }}
                   className={`appui relative h-11 px-2.5 min-[380px]:px-3 sm:px-4 rounded-full text-[0.9rem] sm:text-[0.95rem] font-semibold whitespace-nowrap transition-colors ${
                     actif ? 'text-white' : 'text-stone-600 hover:text-stone-900'
                   }`}

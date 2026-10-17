@@ -12,6 +12,7 @@ import { urlPartage } from '@/lib/whatsapp';
 import { prixF } from '@/lib/produit';
 import { useFocusPiege } from '@/lib/useFocusPiege';
 import InfoBulle from './ui/InfoBulle';
+import { articleDe } from '@/lib/categories';
 
 interface ProductModalProps {
   produit: Produit;
@@ -62,7 +63,12 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
       },
       quantite,
     );
-    confirmerAjout(quantite > 1 ? `${quantite} crêpes ajoutées` : 'Crêpe ajoutée');
+    const nom = articleDe(produit.categorie);
+    confirmerAjout(
+      quantite > 1
+        ? `${quantite} ${nom.des} ajouté${nom.un === 'article' ? 's' : 'es'}`
+        : `${nom.un[0].toUpperCase()}${nom.un.slice(1)} ajouté${nom.un === 'article' ? '' : 'e'}`,
+    );
     onClose();
   };
 
@@ -131,7 +137,7 @@ export default function ProductModal({ produit, extras, onClose }: ProductModalP
               onClick={() => void partager()}
               className="appui mt-3 inline-flex items-center gap-1.5 min-h-11 text-sm font-semibold text-stone-700 hover:text-amber-800 border border-stone-200 hover:border-amber-700 px-3.5 rounded-lg transition-colors"
             >
-              <Share2 className="w-3.5 h-3.5" /> Partager cette crêpe
+              <Share2 className="w-3.5 h-3.5" /> Partager {articleDe(produit.categorie).un === 'article' ? 'cet article' : `cette ${articleDe(produit.categorie).un}`}
             </button>
           </div>
 

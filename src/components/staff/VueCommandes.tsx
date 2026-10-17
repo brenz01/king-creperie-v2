@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Phone, MessageCircle, Undo2, Loader2 } from 'lucide-react';
 import type { Commande, StatutCommande } from '@/types';
 import { urlWhatsAppClient } from '@/lib/whatsapp';
@@ -8,31 +8,31 @@ import { EN_COURS, depuis, heure, minutesDepuis, numero, prix, useMaintenant } f
 
 type Filtre = 'en_cours' | 'livrees' | 'annulees';
 
-// Pastille : la couleur dit quoi faire. Rouge = à lancer, caramel = au
-// four, indigo = chez le livreur.
+// Pastille : la couleur dit quoi faire. Rouge = à lancer, ambre = au
+// four, crème = chez le livreur.
 const PASTILLE: Record<StatutCommande, string> = {
-  recue: 'bg-kc-bissap text-white',
-  en_preparation: 'bg-kc-caramel text-kc-nuit',
-  en_livraison: 'bg-kc-indigo text-kc-beurre',
-  livree: 'bg-kc-encre/10 text-kc-encre/70',
-  annulee: 'bg-kc-encre/10 text-kc-encre/50 line-through',
+  recue: 'bg-rose-600 text-white',
+  en_preparation: 'bg-amber-500 text-kc-nuit',
+  en_livraison: 'bg-kc-creme text-kc-nuit',
+  livree: 'bg-white/10 text-kc-creme/70',
+  annulee: 'bg-white/10 text-kc-creme/75 line-through',
 };
 
 // Bord gauche de la carte : l'étape se lit d'un coup d'œil, même de loin.
 const BORD: Record<StatutCommande, string> = {
-  recue: 'border-l-kc-bissap',
-  en_preparation: 'border-l-kc-caramel',
-  en_livraison: 'border-l-kc-indigo',
+  recue: 'border-l-rose-600',
+  en_preparation: 'border-l-amber-500',
+  en_livraison: 'border-l-kc-creme',
   livree: 'border-l-kc-ok',
-  annulee: 'border-l-kc-encre/30',
+  annulee: 'border-l-kc-creme/30',
 };
 
 const POINT: Record<StatutCommande, string> = {
-  recue: 'bg-kc-bissap',
-  en_preparation: 'bg-kc-caramel',
-  en_livraison: 'bg-kc-brume',
+  recue: 'bg-rose-500',
+  en_preparation: 'bg-amber-500',
+  en_livraison: 'bg-kc-creme',
   livree: 'bg-kc-ok',
-  annulee: 'bg-kc-brume/40',
+  annulee: 'bg-kc-sable/40',
 };
 
 const LIBELLE_COURT: Record<StatutCommande, string> = {
@@ -107,8 +107,8 @@ export default function VueCommandes({ commandes, loading, nouvelles, onStatut, 
             key={c.id}
             onClick={() => setFiltre(c.id)}
             aria-pressed={filtre === c.id}
-            className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-              filtre === c.id ? 'bg-kc-beurre text-kc-nuit' : 'border border-white/15 text-kc-brume hover:border-white/40'
+            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              filtre === c.id ? 'bg-amber-500 text-kc-nuit' : 'border border-kc-bord text-kc-sable hover:border-kc-sable/60'
             }`}
           >
             {c.libelle}
@@ -117,16 +117,32 @@ export default function VueCommandes({ commandes, loading, nouvelles, onStatut, 
       </div>
 
       {loading ? (
-        <div className="py-20 flex justify-center text-kc-brume">
-          <Loader2 className="w-7 h-7 animate-spin" aria-label="Chargement des commandes" />
+        // Squelette : la forme des cartes de commande arrive avant elles.
+        <div role="status" aria-label="Chargement des commandes" className="mt-4 space-y-3 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border border-kc-bord bg-kc-carte p-5">
+              <div className="h-6 w-24 rounded-full bg-white/10 motion-safe:animate-pulse" />
+              <div className="mt-4 h-5 w-40 rounded bg-white/10" />
+              <div className="mt-3 h-16 rounded-xl bg-white/5" />
+              <div className="mt-3 h-14 rounded-xl bg-white/10" />
+            </div>
+          ))}
         </div>
       ) : liste.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-kc-beurre font-semibold">
+          <p className="text-kc-creme font-semibold">
             {filtre === 'en_cours' ? 'Rien à préparer pour l’instant.' : 'Rien à afficher pour aujourd’hui.'}
           </p>
-          {filtre === 'en_cours' && (
-            <p className="mt-1 text-sm text-kc-brume/70">Les nouvelles commandes apparaissent ici toutes seules.</p>
+          {filtre === 'en_cours' ? (
+            <p className="mt-1 text-sm text-kc-sable">Les nouvelles commandes apparaissent ici toutes seules, avec le son si vous l’activez.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFiltre('en_cours')}
+              className="appui mt-4 min-h-11 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-kc-nuit text-sm font-semibold"
+            >
+              Voir les commandes en cours
+            </button>
           )}
         </div>
       ) : filtre === 'en_cours' ? (
@@ -141,13 +157,13 @@ export default function VueCommandes({ commandes, loading, nouvelles, onStatut, 
                 aria-label={`${LIBELLE_COURT[statut]} : ${groupe.length}`}
                 className={groupe.length === 0 ? 'hidden lg:block' : ''}
               >
-                <h3 className="flex items-center gap-2 mb-2.5 text-sm font-semibold text-kc-brume">
+                <h3 className="flex items-center gap-2 mb-2.5 text-sm font-semibold text-kc-sable">
                   <span className={`w-2.5 h-2.5 rounded-full ${POINT[statut]}`} aria-hidden />
                   {LIBELLE_COURT[statut]}
-                  <span className="tabular-nums text-kc-brume/60">{groupe.length}</span>
+                  <span className="tabular-nums text-kc-sable/80">{groupe.length}</span>
                 </h3>
                 {groupe.length === 0 ? (
-                  <p className="rounded-3xl border border-dashed border-white/15 py-8 text-center text-sm text-kc-brume/50">
+                  <p className="rounded-2xl border border-dashed border-white/15 py-8 text-center text-sm text-kc-sable/80">
                     Rien ici
                   </p>
                 ) : (
@@ -197,12 +213,12 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
   const creneau = cmd.creneau_souhaite && cmd.creneau_souhaite !== 'Dès que possible' ? cmd.creneau_souhaite : null;
   const attente = minutesDepuis(cmd.created_at, maintenant);
   const couleurAttente = !active
-    ? 'text-kc-encre/60'
+    ? 'text-kc-creme/75'
     : attente >= ATTENTE_RETARD
-      ? 'text-kc-bissap font-bold'
+      ? 'text-rose-400 font-semibold'
       : attente >= ATTENTE_SURVEILLER
-        ? 'text-[#b06a00] font-bold'
-        : 'text-kc-encre/70 font-semibold';
+        ? 'text-[#f59e0b] font-semibold'
+        : 'text-kc-creme/70 font-semibold';
   const nbArticles = (cmd.commande_items ?? []).reduce((s, it) => s + it.quantite, 0);
 
   const agir = async (statut: StatutCommande) => {
@@ -218,50 +234,50 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
     // fois, puis reste simplement encadrée.
     <article
       key={cmd.statut}
-      className={`kc-apparait rounded-3xl border-l-[6px] ${BORD[cmd.statut]} bg-kc-lait text-kc-encre p-4 sm:p-5 ${
-        nouvelle ? 'kc-surligne ring-4 ring-kc-bissap/70' : ''
+      className={`kc-apparait rounded-2xl border-l-[6px] ${BORD[cmd.statut]} bg-kc-carte border border-kc-bord text-kc-creme p-4 sm:p-5 ${
+        nouvelle ? 'kc-surligne ring-4 ring-amber-600/70' : ''
       } ${cmd.statut === 'annulee' ? 'opacity-70' : ''}`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${PASTILLE[cmd.statut]}`}>
+        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${PASTILLE[cmd.statut]}`}>
           {nouvelle ? 'Nouvelle commande' : LIBELLE_COURT[cmd.statut]}
         </span>
         <span className="text-xs text-right">
           <span className={couleurAttente}>{depuis(cmd.created_at, maintenant)}</span>
-          <span className="text-kc-encre/50"> · {heure(cmd.created_at)}</span>
+          <span className="text-kc-creme/75"> · {heure(cmd.created_at)}</span>
         </span>
       </div>
 
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-bold leading-tight">{cmd.client_nom}</h3>
-          <p className="text-xs text-kc-encre/50 mt-0.5">
+          <h3 className="text-lg font-semibold leading-tight">{cmd.client_nom}</h3>
+          <p className="text-xs text-kc-creme/75 mt-0.5">
             n° {numero(cmd.id)} · {nbArticles} article{nbArticles > 1 ? 's' : ''}
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="prix text-2xl text-kc-indigo leading-none">{prix(cmd.total)}</p>
-          {active && <p className="mt-1 text-[11px] text-kc-encre/55">à encaisser</p>}
+          <p className="prix text-2xl text-kc-caramel leading-none">{prix(cmd.total)}</p>
+          {active && <p className="mt-1 text-xs text-kc-creme/75">à encaisser</p>}
         </div>
       </div>
 
-      {creneau && <p className="mt-2 inline-flex rounded-full bg-kc-caramel/30 px-3 py-1 text-sm font-bold">Pour : {creneau}</p>}
+      {creneau && <p className="mt-2 inline-flex rounded-full bg-amber-500/15 text-amber-300 px-3 py-1 text-sm font-semibold">Pour : {creneau}</p>}
 
       {cmd.commande_items && cmd.commande_items.length > 0 && (
-        <ul className="mt-3 rounded-2xl bg-white border border-kc-encre/10 divide-y divide-kc-encre/5">
+        <ul className="mt-3 rounded-2xl bg-kc-nuit border border-kc-bord divide-y divide-kc-bord">
           {cmd.commande_items.map((it, i) => (
             <li key={it.id ?? i} className="px-3 py-2.5 text-[15px] leading-snug">
-              <span className="font-bold">{it.quantite} ×</span> {it.nom_produit}
+              <span className="font-semibold">{it.quantite} ×</span> {it.nom_produit}
               {it.extras && it.extras.length > 0 && (
-                <span className="block text-sm font-semibold text-kc-bissap">+ {it.extras.map((e) => e.nom).join(', ')}</span>
+                <span className="block text-sm font-semibold text-amber-400">+ {it.extras.map((e) => e.nom).join(', ')}</span>
               )}
             </li>
           ))}
         </ul>
       )}
 
-      <p className="mt-3 text-sm text-kc-encre/80 leading-snug">
-        <span className="font-semibold text-kc-encre">Livraison : </span>
+      <p className="mt-3 text-sm text-kc-creme/80 leading-snug">
+        <span className="font-semibold text-kc-creme">Livraison : </span>
         {cmd.adresse_livraison}
       </p>
 
@@ -269,7 +285,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
         <div className="mt-3 grid grid-cols-2 gap-2">
           <a
             href={`tel:${cmd.client_telephone.replace(/\s/g, '')}`}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-kc-encre/15 py-2.5 text-sm font-semibold hover:border-kc-encre/40"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-kc-bord py-2.5 text-sm font-semibold hover:border-kc-sable/60"
           >
             <Phone className="w-4 h-4" /> Appeler
           </a>
@@ -277,7 +293,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
             href={urlWhatsAppClient(cmd.client_telephone)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-kc-encre/15 py-2.5 text-sm font-semibold hover:border-kc-encre/40"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-kc-bord py-2.5 text-sm font-semibold hover:border-kc-sable/60"
           >
             <MessageCircle className="w-4 h-4" /> WhatsApp
           </a>
@@ -288,7 +304,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
         <button
           onClick={() => void agir(suivant.statut)}
           disabled={enCours}
-          className="appui mt-3 w-full rounded-full bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base py-4 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+          className="appui mt-3 w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-kc-nuit font-semibold text-base py-4 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
         >
           {enCours && <Loader2 className="w-4 h-4 animate-spin" />}
           {suivant.action}
@@ -296,25 +312,12 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
       )}
 
       {confirmerAnnulation ? (
-        <div className="mt-3 rounded-2xl bg-kc-encre/5 p-3">
-          <p className="text-sm font-semibold">Annuler la commande de {cmd.client_nom} ?</p>
-          <p className="text-xs text-kc-encre/60 mt-0.5">Le client le verra sur sa page de suivi. Pensez à le prévenir.</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setConfirmerAnnulation(false)}
-              className="rounded-full border border-kc-encre/15 py-2.5 text-sm font-semibold"
-            >
-              Non, garder
-            </button>
-            <button
-              onClick={() => void agir('annulee')}
-              disabled={enCours}
-              className="rounded-full bg-kc-encre text-kc-lait py-2.5 text-sm font-semibold disabled:opacity-50"
-            >
-              Oui, annuler
-            </button>
-          </div>
-        </div>
+        <ConfirmerAnnulation
+          nom={cmd.client_nom}
+          enCours={enCours}
+          onGarder={() => setConfirmerAnnulation(false)}
+          onAnnuler={() => void agir('annulee')}
+        />
       ) : (
         (precedent || active) && (
           <div className="mt-1 flex items-center justify-between gap-2 text-sm">
@@ -322,7 +325,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
               <button
                 onClick={() => void agir(precedent)}
                 disabled={enCours}
-                className="inline-flex items-center gap-1.5 px-2 py-2.5 text-kc-encre/60 hover:text-kc-encre disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-2 min-h-11 text-kc-creme/75 hover:text-kc-creme disabled:opacity-50"
               >
                 <Undo2 className="w-4 h-4" /> Revenir à : {LIBELLE_COURT[precedent]}
               </button>
@@ -330,7 +333,7 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
               <span />
             )}
             {active && (
-              <button onClick={() => setConfirmerAnnulation(true)} className="px-2 py-2.5 text-kc-encre/60 hover:text-kc-bissap">
+              <button onClick={() => setConfirmerAnnulation(true)} className="px-2 min-h-11 text-kc-creme/75 hover:text-rose-300">
                 Annuler
               </button>
             )}
@@ -338,5 +341,52 @@ function CarteCommande({ commande: cmd, nouvelle, maintenant, onStatut }: CarteC
         )
       )}
     </article>
+  );
+}
+
+// Confirmation d'annulation dans la carte : nomme le client, verbe
+// destructif en rouge, « Garder » reçoit le focus, Échap referme.
+function ConfirmerAnnulation({
+  nom,
+  enCours,
+  onGarder,
+  onAnnuler,
+}: {
+  nom: string;
+  enCours: boolean;
+  onGarder: () => void;
+  onAnnuler: () => void;
+}) {
+  const garder = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    garder.current?.focus();
+  }, []);
+  return (
+    <div
+      role="alertdialog"
+      aria-labelledby="titre-annulation"
+      aria-describedby="aide-annulation"
+      onKeyDown={(e) => e.key === 'Escape' && onGarder()}
+      className="kc-fondu mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3"
+    >
+      <p id="titre-annulation" className="text-sm font-semibold">
+        Annuler la commande de {nom} ?
+      </p>
+      <p id="aide-annulation" className="text-xs text-kc-creme/80 mt-0.5">
+        Le client le verra sur sa page de suivi. Pensez à le prévenir.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button ref={garder} onClick={onGarder} className="appui min-h-11 rounded-xl border border-kc-bord text-sm font-semibold">
+          Garder la commande
+        </button>
+        <button
+          onClick={onAnnuler}
+          aria-busy={enCours}
+          className="appui min-h-11 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold aria-busy:opacity-70"
+        >
+          Annuler la commande
+        </button>
+      </div>
+    </div>
   );
 }

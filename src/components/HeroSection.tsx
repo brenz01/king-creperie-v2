@@ -1,63 +1,84 @@
+import { ArrowRight, Utensils } from 'lucide-react';
 import Link from 'next/link';
-import { Banknote, Bike } from 'lucide-react';
-import PlaqueAccueil from './accueil/PlaqueAccueil';
 import { PastilleBoutique } from './StatutBoutique';
 
-// Accueil asymétrique : le titre en lettrage d'enseigne à gauche, la
-// plaque qui déborde à droite. Les informations pratiques (livraison,
-// paiement, ouverture) sont lisibles sans attendre l'animation.
 export default function HeroSection() {
   return (
-    <section aria-labelledby="titre-accueil" className="relative overflow-hidden bg-kc-indigo text-kc-beurre pt-16">
-      <div className="relative max-w-6xl mx-auto px-5 sm:px-6 pt-6 pb-12 md:py-20 md:grid md:grid-cols-[1.15fr_1fr] md:items-center md:gap-10">
-        {/* La plaque, en débord à droite sur téléphone */}
-        <div className="relative md:order-2 h-[min(78vw,22rem)] md:h-auto">
-          <div className="absolute -right-[22vw] -top-2 w-[min(92vw,26rem)] aspect-square md:static md:w-full md:max-w-[30rem] md:mx-auto">
-            <div className="absolute inset-0 rounded-full bg-kc-nuit shadow-[0_40px_80px_-30px_rgba(0,0,0,0.7)]" />
-            <div className="absolute inset-[5%]">
-              <PlaqueAccueil />
-            </div>
-          </div>
+    <section className="relative w-full min-h-[100svh] pt-16 grid grid-cols-1 lg:grid-cols-2 items-stretch bg-brand-cream">
+      {/* Colonne texte */}
+      <div className="flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-14 lg:py-0 order-2 lg:order-1">
+        <div
+          style={{ animationDelay: '100ms' }}
+          className="kc-apparait inline-flex items-center gap-2 mb-6 text-amber-700 text-xs sm:text-sm font-semibold uppercase tracking-wide"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+          <span>Les Almadies · Dakar</span>
         </div>
 
-        <div className="relative md:order-1 -mt-16 md:mt-0">
-          <h1
-            id="titre-accueil"
-            className="font-display text-[clamp(3.1rem,15vw,6.6rem)] leading-[0.92] tracking-tight max-w-[9ch] md:max-w-none"
-          >
-            Chaude, sortie de la plaque.
-          </h1>
-          <p className="mt-5 max-w-[30ch] text-lg leading-relaxed text-kc-brume">
-            Crêpes salées, sucrées et jus maison, préparés minute aux Almadies.
-          </p>
+        <h1
+          style={{ animationDelay: '200ms' }}
+          className="kc-apparait font-serif text-5xl sm:text-6xl lg:text-[3.6rem] leading-[1.02] text-stone-900 mb-6"
+        >
+          La crêpe bretonne,
+          <br />
+          <em className="italic font-medium text-amber-700">version Dakar</em>
+        </h1>
 
-          <ul className="mt-5 space-y-2 text-[0.95rem] text-kc-lait">
-            <li className="flex items-center gap-2.5">
-              <Bike className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />
-              {/* Espaces fines insécables dans les nombres, insécable avant F : jamais « 2 / 000 F ». */}
-              Livrées de Ngor au Plateau, de 1&#8239;000 à 2&#8239;000&nbsp;F selon le quartier
-            </li>
-            <li className="flex items-center gap-2.5">
-              <Banknote className="w-5 h-5 shrink-0 text-kc-caramel" aria-hidden />
-              Paiement en espèces à la réception
-            </li>
-          </ul>
-          <PastilleBoutique />
+        <p
+          style={{ animationDelay: '350ms' }}
+          className="kc-apparait text-stone-600 text-base sm:text-lg max-w-md leading-relaxed"
+        >
+          Pâte tournée minute, garnitures locales, servie chaude sur commande. Une adresse de quartier qui prend la crêpe au sérieux.
+        </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <a
-              href="#carte"
-              className="appui inline-flex items-center bg-kc-bissap hover:bg-kc-bissap-fonce text-white font-semibold text-base px-7 py-4 rounded-full"
-            >
-              Voir la carte
-            </a>
-            <Link
-              href="/suivi"
-              className="py-2.5 font-semibold text-kc-beurre underline underline-offset-4 decoration-kc-beurre/40 hover:decoration-kc-beurre"
-            >
-              Suivre ma commande
-            </Link>
-          </div>
+        <PastilleBoutique />
+
+        <div
+          style={{ animationDelay: '450ms' }}
+          className="kc-apparait mt-9 flex flex-wrap gap-3"
+        >
+          <a href="#carte" className="appui inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-semibold px-7 py-4 rounded-lg transition-colors">
+            <Utensils className="w-4 h-4" />
+            <span>Voir la carte</span>
+          </a>
+          <Link href="/suivi" className="appui inline-flex items-center gap-2 border-2 border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white font-semibold px-6 py-4 rounded-lg transition-colors">
+            <span>Suivre ma commande</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Colonne vidéo */}
+      <div className="relative min-h-[340px] lg:min-h-0 order-1 lg:order-2 overflow-hidden">
+        {/* 720p sans piste audio : 0,5 Mo (WebM) / 0,7 Mo (MP4). Le poster
+            s'affiche immédiatement (LCP) et sert de repli si l'autoplay est
+            bloqué (mode économie de données). */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          poster="/videos/hero-poster.jpg"
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/videos/hero-bg.webm" type="video/webm" />
+          <source src="/videos/hero-bg.mp4" type="video/mp4" />
+        </video>
+
+        {/* Dégradé qui fond la vidéo vers le crème, pas de voile noir */}
+        <div className="absolute inset-0 bg-gradient-to-r from-creme via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+
+        <div
+          style={{ animationDelay: '600ms' }}
+          className="kc-apparait absolute bottom-6 left-6 lg:bottom-10 lg:left-10 bg-white border border-stone-200 rounded-xl shadow-[0_8px_24px_-12px_rgba(42,27,18,0.08)] px-5 py-4 flex items-center gap-3"
+        >
+          <span className="font-serif text-2xl font-semibold text-amber-700">50+</span>
+          <span className="text-xs text-stone-600 leading-tight max-w-[110px]">
+            crêpes et formules à composer
+          </span>
         </div>
       </div>
     </section>

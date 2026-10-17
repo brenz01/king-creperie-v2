@@ -26,7 +26,7 @@ export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: P
   const hydrate = useEstHydrate();
   const [etat, setEtat] = useState<Etat>('inactif');
 
-  const texteDiscret = compact ? 'text-kc-brume/70' : 'text-kc-encre/60';
+  const texteDiscret = compact ? 'text-kc-sable/70' : 'text-stone-500';
 
   if (permission === 'unsupported') {
     // iOS : le push web n'existe que dans l'app installée (iOS 16.4+).
@@ -78,8 +78,8 @@ export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: P
           type="button"
           onClick={() => void activer()}
           disabled={etat === 'chargement'}
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
-            actif ? 'bg-white/10 text-kc-beurre' : 'bg-kc-caramel text-kc-nuit hover:bg-kc-beurre'
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+            actif ? 'bg-white/10 text-kc-creme' : 'bg-amber-600 hover:bg-amber-500 text-white'
           }`}
         >
           {etat === 'chargement' ? (
@@ -91,14 +91,14 @@ export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: P
           )}
           {actif ? 'Alertes actives' : (libelle ?? 'Activer les alertes')}
         </button>
-        {etat === 'erreur' && <p className="text-xs text-kc-beurre/80">Activation impossible. Réessayez dans un instant.</p>}
+        {etat === 'erreur' && <p className="text-xs text-rose-400">Activation impossible. Réessayez dans un instant.</p>}
       </div>
     );
   }
 
   if (actif) {
     return (
-      <p className="inline-flex items-center gap-2 text-sm font-semibold text-kc-indigo">
+      <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
         <BellRing className="w-4 h-4" /> Vous serez prévenu à chaque étape.
       </p>
     );
@@ -110,13 +110,13 @@ export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: P
         type="button"
         onClick={() => void activer()}
         disabled={etat === 'chargement'}
-        className="inline-flex items-center gap-2 bg-kc-indigo hover:bg-kc-nuit text-kc-beurre font-semibold text-sm px-5 py-3 rounded-full transition-colors disabled:opacity-60"
+        className="appui inline-flex items-center gap-2 bg-stone-900 hover:bg-amber-700 text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors disabled:opacity-60"
       >
         {etat === 'chargement' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
         {libelle ?? 'Me prévenir à chaque étape'}
       </button>
       {etat === 'erreur' && (
-        <p className="text-sm text-kc-bissap">Activation impossible pour le moment. Réessayez dans un instant.</p>
+        <p className="text-sm text-rose-600">Activation impossible pour le moment. Réessayez dans un instant.</p>
       )}
     </div>
   );

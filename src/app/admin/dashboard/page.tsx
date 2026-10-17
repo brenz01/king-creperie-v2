@@ -13,6 +13,7 @@ import VueCarte from '@/components/staff/VueCarte';
 import VueBoutique, { type LigneAuditLog } from '@/components/staff/VueBoutique';
 import { EN_COURS, useMaintenant } from '@/components/staff/commun';
 import { definirSon, jouerCarillon, sonActif, useSonActive } from '@/lib/staff/son';
+import InfoBulle from '@/components/ui/InfoBulle';
 
 // ------------------------------------------------------------------
 // KC Staff. Trois écrans, dans l'ordre du service :
@@ -179,7 +180,7 @@ export default function AdminDashboardPage() {
 
   if (!session) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-kc-nuit text-kc-beurre">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-kc-nuit text-kc-creme">
         <Loader2 className="w-6 h-6 animate-spin" aria-label="Vérification de la session" />
       </div>
     );
@@ -200,7 +201,7 @@ export default function AdminDashboardPage() {
       {etat && !etat.ouvert && (
         <button
           onClick={() => setOnglet('boutique')}
-          className="w-full text-left rounded-2xl bg-kc-bissap/15 border border-kc-bissap/40 px-4 py-3 text-sm text-kc-beurre"
+          className="w-full text-left rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm text-kc-creme"
         >
           <span className="font-semibold">{etat.enPause ? 'Commandes en pause.' : 'Boutique fermée.'}</span> Les clients ne
           peuvent pas commander.{' '}
@@ -217,42 +218,45 @@ export default function AdminDashboardPage() {
   );
 
   return (
-    <div className="min-h-[100dvh] bg-kc-nuit text-kc-lait pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-30 bg-kc-nuit border-b border-white/10 pt-[env(safe-area-inset-top)]">
+    <div className="min-h-[100dvh] bg-kc-nuit text-kc-creme pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-30 bg-kc-nuit/90 backdrop-blur-md border-b border-kc-bord pt-[env(safe-area-inset-top)]">
         <div className={`${largeur} mx-auto px-4 h-16 flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-2 min-w-0">
             <Crown className="w-6 h-6 text-kc-caramel shrink-0" strokeWidth={2.4} />
-            <span className="font-display text-xl text-kc-beurre leading-none">KC Staff</span>
+            <span className="font-serif font-semibold text-xl text-kc-creme leading-none">KC Staff</span>
           </div>
           <div className="flex items-center gap-1">
             {etat && (
               <button
                 onClick={() => setOnglet('boutique')}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-kc-beurre"
+                className="appui inline-flex items-center gap-1.5 min-h-11 rounded-full border border-kc-bord px-3 text-xs font-semibold text-kc-creme"
               >
-                <span className={`w-2 h-2 rounded-full ${etat.ouvert ? 'bg-[#5fd08b]' : 'bg-kc-bissap'}`} aria-hidden />
+                <span className={`w-2 h-2 rounded-full ${etat.ouvert ? 'bg-emerald-400' : 'bg-rose-500'}`} aria-hidden />
                 {etat.ouvert ? 'Ouvert' : etat.enPause ? 'En pause' : 'Fermé'}
               </button>
             )}
-            <button
-              onClick={() => definirSon(!son)}
-              aria-pressed={son}
-              aria-label={son ? 'Couper le son des nouvelles commandes' : 'Activer le son des nouvelles commandes'}
-              title={son ? 'Son activé' : 'Son coupé'}
-              className="appui w-11 h-11 rounded-full flex items-center justify-center text-kc-brume hover:bg-white/10"
-            >
-              {son ? <Volume2 className="w-5 h-5 text-kc-caramel" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-            <button
-              onClick={() => {
-                setActualisation(true);
-                toutRecharger();
-              }}
-              aria-label="Actualiser"
-              className="w-11 h-11 rounded-full flex items-center justify-center text-kc-brume hover:bg-white/10"
-            >
-              <RefreshCw className={`w-5 h-5 ${actualisation ? 'animate-spin' : ''}`} />
-            </button>
+            <InfoBulle libelle={son ? 'Couper le son' : 'Activer le son'} cote="basDroite" sombre>
+              <button
+                onClick={() => definirSon(!son)}
+                aria-pressed={son}
+                aria-label={son ? 'Couper le son des nouvelles commandes' : 'Activer le son des nouvelles commandes'}
+                className="appui w-11 h-11 rounded-full flex items-center justify-center text-kc-sable hover:bg-white/10"
+              >
+                {son ? <Volume2 className="w-5 h-5 text-kc-caramel" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+            </InfoBulle>
+            <InfoBulle libelle="Actualiser les commandes" cote="basDroite" sombre>
+              <button
+                onClick={() => {
+                  setActualisation(true);
+                  toutRecharger();
+                }}
+                aria-label="Actualiser les commandes"
+                className="appui w-11 h-11 rounded-full flex items-center justify-center text-kc-sable hover:bg-white/10"
+              >
+                <RefreshCw className={`w-5 h-5 ${actualisation ? 'motion-safe:animate-spin' : ''}`} />
+              </button>
+            </InfoBulle>
           </div>
         </div>
       </header>
@@ -261,7 +265,7 @@ export default function AdminDashboardPage() {
         {erreur && (
           <div
             role="alert"
-            className="mb-4 rounded-2xl bg-kc-bissap/15 border border-kc-bissap/40 text-kc-beurre px-4 py-3 text-sm"
+            className="mb-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-kc-creme px-4 py-3 text-sm"
           >
             {erreur}
           </div>
@@ -294,7 +298,7 @@ export default function AdminDashboardPage() {
       {/* Navigation au pouce. Les pastilles disent où il y a quelque chose à faire. */}
       <nav
         aria-label="Sections"
-        className="fixed bottom-0 inset-x-0 z-30 bg-kc-nuit border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 inset-x-0 z-30 bg-kc-nuit/90 backdrop-blur-md border-t border-kc-bord pb-[env(safe-area-inset-bottom)]"
       >
         <div className="max-w-3xl mx-auto grid grid-cols-3">
           {(
@@ -315,21 +319,21 @@ export default function AdminDashboardPage() {
               onClick={() => setOnglet(id)}
               aria-current={onglet === id ? 'page' : undefined}
               className={`relative flex flex-col items-center gap-1 py-3 text-xs font-semibold transition-colors ${
-                onglet === id ? 'text-kc-caramel' : 'text-kc-brume/60 hover:text-kc-brume'
+                onglet === id ? 'text-kc-caramel' : 'text-kc-sable/80 hover:text-kc-sable'
               }`}
             >
               <Icone className="w-5 h-5" />
               {libelle}
               {badge > 0 &&
                 (id === 'boutique' ? (
-                  <span className="absolute top-2 left-1/2 ml-2.5 w-2.5 h-2.5 rounded-full bg-kc-bissap" aria-label="Fermé" />
+                  <span className="absolute top-2 left-1/2 ml-2.5 w-2.5 h-2.5 rounded-full bg-rose-500" aria-label="Fermé" />
                 ) : (
                   <span
-                    className={`absolute top-1.5 left-1/2 ml-2 min-w-5 h-5 px-1 rounded-full text-[11px] leading-5 text-center ${
+                    className={`absolute top-1.5 left-1/2 ml-2 min-w-5 h-5 px-1 rounded-full text-xs leading-5 text-center ${
                       urgent
-                        ? 'bg-kc-bissap text-white'
+                        ? 'bg-rose-600 text-white'
                         : id === 'carte'
-                          ? 'bg-white/15 text-kc-brume'
+                          ? 'bg-white/15 text-kc-sable'
                           : 'bg-kc-caramel text-kc-nuit'
                     }`}
                   >

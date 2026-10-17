@@ -52,22 +52,20 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-kc-nuit text-kc-beurre px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-12 flex items-center justify-center">
-      <div className="w-full max-w-sm">
+    <div className="min-h-[100dvh] bg-kc-nuit text-kc-creme px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-12 flex items-center justify-center">
+      <div className="w-full max-w-sm bg-kc-carte/70 backdrop-blur-md border border-kc-bord rounded-2xl p-6 sm:p-8 shadow-2xl">
         <div className="text-center mb-8">
-          <span className="mx-auto w-24 h-24 rounded-full bg-kc-indigo flex items-center justify-center shadow-[0_24px_48px_-24px_rgba(0,0,0,0.9)]">
-            <span className="w-16 h-16 rounded-full border-2 border-dashed border-kc-beurre/25 flex items-center justify-center">
-              <Crown className="w-8 h-8 text-kc-caramel" strokeWidth={2.4} />
-            </span>
+          <span className="mx-auto w-20 h-20 rounded-2xl bg-kc-carte border border-kc-bord flex items-center justify-center shadow-[0_24px_48px_-24px_rgba(0,0,0,0.9)]">
+            <Crown className="w-9 h-9 text-amber-500" />
           </span>
-          <h1 className="mt-5 font-display text-4xl leading-none">KC Staff</h1>
-          <p className="mt-2 text-sm text-kc-brume/80">Commandes de King Crêperie, en direct.</p>
+          <h1 className="mt-5 font-serif font-semibold text-4xl leading-none">KC Staff</h1>
+          <p className="mt-2 text-sm text-kc-sable/80">Commandes de King Crêperie, en direct.</p>
         </div>
 
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-2xl bg-kc-bissap/15 border border-kc-bissap/40 text-kc-beurre px-4 py-3 text-sm"
+            className="mb-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-3 text-sm"
           >
             {error}
           </div>
@@ -79,7 +77,7 @@ export default function AdminLoginPage() {
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-brume/50 w-4 h-4" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-sable/50 w-4 h-4" />
               <input
                 id="email"
                 type="email"
@@ -88,7 +86,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/15 rounded-2xl py-3.5 pl-11 pr-4 text-base text-kc-lait placeholder:text-kc-brume/40 focus:outline-none focus:border-kc-caramel transition-colors"
+                className="w-full bg-kc-nuit border border-kc-bord rounded-xl py-3.5 pl-11 pr-4 text-base text-kc-creme placeholder:text-kc-sable/40 focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
           </div>
@@ -98,7 +96,7 @@ export default function AdminLoginPage() {
               Mot de passe
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-brume/50 w-4 h-4" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-kc-sable/50 w-4 h-4" />
               <input
                 id="password"
                 type="password"
@@ -106,7 +104,7 @@ export default function AdminLoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/15 rounded-2xl py-3.5 pl-11 pr-4 text-base text-kc-lait focus:outline-none focus:border-kc-caramel transition-colors"
+                className="w-full bg-kc-nuit border border-kc-bord rounded-xl py-3.5 pl-11 pr-4 text-base text-kc-creme focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
           </div>
@@ -114,7 +112,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="appui w-full bg-kc-caramel hover:bg-kc-beurre text-kc-nuit font-semibold py-4 rounded-full transition-colors mt-2 disabled:opacity-50"
+            className="appui w-full bg-amber-500 hover:bg-amber-400 text-kc-nuit font-semibold py-4 rounded-xl transition-colors mt-2 disabled:opacity-50"
           >
             {loading ? 'Connexion…' : 'Se connecter'}
           </button>

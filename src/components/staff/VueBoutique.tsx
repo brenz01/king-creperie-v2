@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, Loader2, LogOut } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +9,7 @@ import { rafraichirBoutique } from '@/lib/useBoutique';
 import { JOURS, ORDRE_JOURS, SchemaHoraires, etatBoutique, formatHeure, type Boutique, type Horaires } from '@/lib/horaires';
 import { LIBELLE_STATUT, type Commande, type StatutCommande } from '@/types';
 import PushOptIn from '@/components/pwa/PushOptIn';
-import { Carte, Interrupteur, TitreSection, numero, prix } from './commun';
+import { Carte, Interrupteur, TitreSection, numero } from './commun';
 
 export interface LigneAuditLog {
   id: string;
@@ -46,7 +46,6 @@ export default function VueBoutique(props: VueBoutiqueProps) {
       ) : boutique ? (
         <>
           <EtatEtPause boutique={boutique} maintenant={maintenant} onBoutique={props.onBoutique} />
-          <BilanDuJour commandes={commandes} maintenant={maintenant} />
           <EditeurHoraires boutique={boutique} onBoutique={props.onBoutique} />
         </>
       ) : (
@@ -54,8 +53,6 @@ export default function VueBoutique(props: VueBoutiqueProps) {
           <Loader2 className="w-6 h-6 animate-spin" aria-label="Chargement" />
         </div>
       )}
-
-      {boutiqueAbsente && <BilanDuJour commandes={commandes} maintenant={maintenant} />}
 
       <section>
         <TitreSection aide="Pour être prévenu à chaque nouvelle commande, même téléphone verrouillé.">Alertes</TitreSection>
@@ -190,76 +187,6 @@ function EtatEtPause({
         </div>
       </Carte>
     </section>
-  );
-}
-
-// ------------------------------------------------------------------
-// Bilan du jour (pour le gérant)
-// ------------------------------------------------------------------
-function BilanDuJour({ commandes, maintenant }: { commandes: Commande[]; maintenant: number }) {
-  const bilan = useMemo(() => {
-    const jour = new Date(maintenant).toISOString().slice(0, 10);
-    // Dakar = UTC : la date UTC est la date locale.
-    const duJour = commandes.filter((c) => new Date(c.created_at).toISOString().slice(0, 10) === jour);
-    const valides = duJour.filter((c) => c.statut !== 'annulee');
-    const livrees = duJour.filter((c) => c.statut === 'livree');
-    const encaisse = livrees.reduce((s, c) => s + c.total, 0);
-    const attendu = valides.filter((c) => c.statut !== 'livree').reduce((s, c) => s + c.total, 0);
-    const ventes = new Map<string, number>();
-    for (const c of valides)
-      for (const it of c.commande_items ?? []) ventes.set(it.nom_produit, (ventes.get(it.nom_produit) ?? 0) + it.quantite);
-    const top = [...ventes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
-    return {
-      nb: valides.length,
-      annulees: duJour.length - valides.length,
-      encaisse,
-      attendu,
-      panierMoyen: valides.length ? Math.round(valides.reduce((s, c) => s + c.total, 0) / valides.length) : 0,
-      top,
-    };
-  }, [commandes, maintenant]);
-
-  return (
-    <section>
-      <TitreSection aide="Heure de Dakar. Les annulées ne sont pas comptées.">Aujourd’hui</TitreSection>
-      <div className="grid grid-cols-2 gap-2">
-        <Tuile valeur={String(bilan.nb)} libelle={`commande${bilan.nb > 1 ? 's' : ''}`} />
-        <Tuile valeur={prix(bilan.encaisse)} libelle="encaissés (livrées)" />
-        <Tuile valeur={prix(bilan.attendu)} libelle="à encaisser (en cours)" />
-        <Tuile valeur={bilan.nb ? prix(bilan.panierMoyen) : '–'} libelle="panier moyen" />
-      </div>
-      <Carte className="mt-2 p-4">
-        <p className="text-sm font-semibold">Les plus demandées</p>
-        {bilan.top.length === 0 ? (
-          <p className="mt-1 text-sm text-kc-creme/75">Pas encore de commande aujourd’hui.</p>
-        ) : (
-          <ol className="mt-2 space-y-1.5">
-            {bilan.top.map(([nom, q], i) => (
-              <li key={nom} className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate">
-                  <span className="font-semibold text-kc-caramel">{i + 1}.</span> {nom}
-                </span>
-                <span className="font-semibold shrink-0">× {q}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        {bilan.annulees > 0 && (
-          <p className="mt-3 text-xs text-kc-creme/75">
-            {bilan.annulees} commande{bilan.annulees > 1 ? 's' : ''} annulée{bilan.annulees > 1 ? 's' : ''} aujourd’hui.
-          </p>
-        )}
-      </Carte>
-    </section>
-  );
-}
-
-function Tuile({ valeur, libelle }: { valeur: string; libelle: string }) {
-  return (
-    <Carte className="p-4">
-      <p className="prix text-2xl leading-none text-kc-caramel">{valeur}</p>
-      <p className="mt-1.5 text-xs font-semibold text-kc-creme/75">{libelle}</p>
-    </Carte>
   );
 }
 

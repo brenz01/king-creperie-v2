@@ -154,3 +154,11 @@
 .carte-reserve {
   padding-bottom: max(5rem, calc(var(--reserve-panier, 0px) + 2rem));
 }
+
+/* Impression : seul le ticket de cuisine sort (KC Staff). */
+@media print {
+  @page { margin: 6mm; }
+  body * { visibility: hidden; }
+  .ticket-impression, .ticket-impression * { visibility: visible; }
+  .ticket-impression { position: absolute; inset: 0 auto auto 0; width: 72mm; }
+}

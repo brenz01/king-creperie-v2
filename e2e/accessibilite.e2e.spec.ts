@@ -57,7 +57,7 @@ test('espace staff', async ({ page }) => {
   await page.goto('/admin/dashboard');
   await expect(page.locator('article').first()).toBeVisible();
   await analyser(page, 'commandes staff');
-  for (const onglet of ['Carte', 'Boutique']) {
+  for (const onglet of ['Aujourd’hui', 'Clients', 'Carte', 'Boutique']) {
     await page.locator('nav[aria-label="Sections"] button', { hasText: onglet }).click();
     await analyser(page, `${onglet} staff`);
   }

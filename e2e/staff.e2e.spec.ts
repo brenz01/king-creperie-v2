@@ -16,6 +16,10 @@ test('commandes : la commande à lancer passe en préparation', async ({ page })
   const premiere = page.locator('article').first();
   await expect(premiere).toContainText('Awa Ndiaye');
   await expect(premiere).toContainText('À lancer');
+  // Repliée par défaut : l'action apparaît en dépliant la carte.
+  await expect(premiere.getByRole('button', { name: 'Lancer la préparation' })).toHaveCount(0);
+  await premiere.locator('button[aria-expanded]').click();
+  await expect(premiere.locator('button[aria-expanded]')).toHaveAttribute('aria-expanded', 'true');
   await premiere.getByRole('button', { name: 'Lancer la préparation' }).click();
   await expect(page.locator('article', { hasText: 'Awa Ndiaye' })).toContainText('En préparation');
   await expect(
@@ -25,6 +29,7 @@ test('commandes : la commande à lancer passe en préparation', async ({ page })
 
 test('commandes : l’annulation demande une confirmation', async ({ page }) => {
   const carte = page.locator('article', { hasText: 'Awa Ndiaye' });
+  await carte.locator('button[aria-expanded]').click();
   await carte.getByRole('button', { name: 'Annuler', exact: true }).click();
   await expect(carte).toContainText('Annuler la commande de Awa Ndiaye ?');
   await expect(carte.getByRole('button', { name: 'Garder la commande' })).toBeFocused();
@@ -71,4 +76,62 @@ test('son des nouvelles commandes : coupé par défaut, mémorisé sur l’appar
   );
   await page.reload();
   await expect(page.getByRole('button', { name: 'Couper le son des nouvelles commandes' })).toBeVisible();
+});
+
+test('aujourd’hui : chiffres du jour, vitesse, bilan et export', async ({ page }) => {
+  await onglet(page, 'Aujourd’hui').click();
+  const region = page.locator('main');
+  await expect(region.getByText('Encaissé')).toBeVisible();
+  await expect(region.getByText('Panier moyen')).toBeVisible();
+  await expect(region.getByRole('img', { name: 'Commandes par heure' })).toBeVisible();
+  await expect(region.getByText('de la commande à la livraison')).toBeVisible();
+  const bilan = region.getByRole('link', { name: 'Envoyer le bilan sur WhatsApp' });
+  expect(decodeURIComponent((await bilan.getAttribute('href')) ?? '')).toContain('Bilan King Crêperie');
+  const [telechargement] = await Promise.all([
+    page.waitForEvent('download'),
+    region.getByRole('button', { name: 'Exporter en CSV' }).click(),
+  ]);
+  expect(telechargement.suggestedFilename()).toMatch(/^king-creperie-ventes-.*\.csv$/);
+  // « À faire » mène aux commandes.
+  await region.getByRole('button', { name: /à lancer/ }).click();
+  await expect(page.locator('article').first()).toContainText('Awa Ndiaye');
+});
+
+test('clients : regroupés par numéro, fidèles repérés', async ({ page }) => {
+  await onglet(page, 'Clients').click();
+  const awa = page.locator('main li', { hasText: 'Awa Ndiaye' });
+  await expect(awa).toHaveCount(1);
+  await expect(awa).toContainText('Fidèle');
+  await expect(awa).toContainText('4 commandes');
+  await page.getByRole('searchbox').fill('fatou');
+  await expect(page.locator('main li')).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Écrire à Fatou Sarr sur WhatsApp' })).toHaveAttribute('href', /wa\.me\/221782223344/);
+});
+
+test('ticket de cuisine : imprimé depuis la carte de commande', async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { imprime: number }).imprime = 0;
+    window.print = () => {
+      (window as unknown as { imprime: number }).imprime++;
+    };
+  });
+  await page.locator('article', { hasText: 'Awa Ndiaye' }).locator('button[aria-expanded]').click();
+  await page.getByRole('button', { name: 'Imprimer le ticket de Awa Ndiaye' }).click();
+  const ticket = page.locator('.ticket-impression');
+  await expect(ticket).toContainText('2 × Crêpe Jambon Fromage Œuf');
+  await expect(ticket).toContainText('7 300 F');
+  await expect.poll(() => page.evaluate(() => (window as unknown as { imprime: number }).imprime)).toBe(1);
+});
+
+test('compte : menu avec l’adresse et la déconnexion', async ({ page }) => {
+  await page.getByRole('button', { name: 'Mon compte' }).click();
+  const menu = page.getByRole('group', { name: 'Mon compte' });
+  await expect(menu).toContainText('staff@exemple.sn');
+  await expect(menu.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+  await menu.getByRole('button', { name: 'Réglages de la boutique' }).click();
+  await expect(page.getByText('Les clients peuvent commander.')).toBeVisible();
+  await page.getByRole('button', { name: 'Mon compte' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('group', { name: 'Mon compte' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Mon compte' })).toBeFocused();
 });

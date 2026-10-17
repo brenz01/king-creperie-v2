@@ -280,7 +280,7 @@ function TrackingContent() {
               sessionStorage.setItem(CLE_WA_ENVOYE(suivi.id), '1');
             } catch {}
           }}
-          className={`${BOUTON} bg-[#1FA855] hover:bg-[#178a45]`}
+          className={`${BOUTON} bg-[#15803d] hover:bg-[#166534]`}
         >
           <MessageCircle className="w-5 h-5" aria-hidden /> Envoyer sur WhatsApp pour confirmer
         </a>
@@ -495,7 +495,7 @@ function FeuilleAide({
         </div>
         <div className="mt-4 flex flex-col gap-2">
           <a href={urlContactWhatsApp()} target="_blank" rel="noopener noreferrer" className={ligne}>
-            <MessageCircle className="w-5 h-5 text-[#178a45]" aria-hidden /> Écrire à King Crêperie
+            <MessageCircle className="w-5 h-5 text-[#15803d]" aria-hidden /> Écrire à King Crêperie
           </a>
           {message && (
             <a href={urlWhatsApp(message)} target="_blank" rel="noopener noreferrer" onClick={onWaEnvoye} className={ligne}>

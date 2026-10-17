@@ -384,7 +384,7 @@ export default function CommandeFlow({ mode, onFermer }: CommandeFlowProps) {
               sessionStorage.setItem(CLE_WA_ENVOYE(commande.id), '1');
             } catch {}
           }}
-          className="appui flex items-center justify-center gap-2 bg-[#1FA855] hover:bg-[#178a45] text-white font-semibold text-base py-4 rounded-xl transition-colors"
+          className="appui flex items-center justify-center gap-2 bg-[#15803d] hover:bg-[#166534] text-white font-semibold text-base py-4 rounded-xl transition-colors"
         >
           <MessageCircle className="w-5 h-5" />
           {waOuvert ? 'Renvoyer sur WhatsApp' : 'Envoyer sur WhatsApp pour confirmer'}

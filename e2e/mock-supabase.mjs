@@ -111,11 +111,52 @@ function initialiser() {
     },
   ];
 
+  // Historique pour le tableau de bord : livrées aujourd'hui et le même
+  // jour la semaine dernière, une cliente qui revient (Awa : fidèle),
+  // journal des statuts pour la vitesse du service.
+  const audit = [];
+  let numCmd = 0;
+  const livree = (ageMin, nom, tel, total, items, etapes = [5, 18, 40], statut = 'livree') => {
+    const idc = `c0000000-0000-4000-8000-${String(++numCmd).padStart(12, '0')}`;
+    const t0 = Date.now() - ageMin * 60_000;
+    staff.push({
+      id: idc,
+      created_at: new Date(t0).toISOString(),
+      client_nom: nom,
+      client_telephone: tel,
+      adresse_livraison: 'Ngor, villa 4',
+      creneau_souhaite: 'Dès que possible',
+      total,
+      statut,
+      commande_items: items,
+    });
+    if (statut !== 'livree') return;
+    ['en_preparation', 'en_livraison', 'livree'].forEach((s, i) =>
+      audit.push({
+        id: `d0000000-0000-4000-8000-${String(audit.length + 1).padStart(12, '0')}`,
+        commande_id: idc,
+        ancien_statut: i === 0 ? 'recue' : ['en_preparation', 'en_livraison'][i - 1],
+        nouveau_statut: s,
+        modifie_par_email: 'staff@exemple.sn',
+        created_at: new Date(t0 + etapes[i] * 60_000).toISOString(),
+      }),
+    );
+  };
+  const SEMAINE = 7 * 24 * 60;
+  livree(45, 'Fatou Sarr', '78 222 33 44', 4500, [ligne(7, 2), ligne(19, 1)], [4, 16, 38]);
+  livree(95, 'Awa Ndiaye', '77 123 45 67', 3500, [ligne(7, 1), ligne(9, 1)], [6, 20, 44]);
+  livree(150, 'Ibou Fall', '70 111 22 33', 6500, [ligne(3, 1), ligne(1, 1), ligne(14, 1)], [5, 22, 47]);
+  livree(210, 'Khady Diallo', '76 444 55 66', 2000, [ligne(9, 1)], [8, 19, 41], 'annulee');
+  livree(SEMAINE + 60, 'Awa Ndiaye', '+221 77 123 45 67', 4000, [ligne(7, 2)]);
+  livree(SEMAINE + 120, 'Modou Sène', '77 999 88 77', 3000, [ligne(2, 1)]);
+  livree(SEMAINE + 180, 'Fatou Sarr', '78 222 33 44', 5000, [ligne(4, 1), ligne(14, 1)]);
+  livree(2 * SEMAINE, 'Awa Ndiaye', '771234567', 2500, [ligne(1, 1)]);
+
   etat = {
     produits,
     extras,
     staff,
-    audit: [],
+    audit,
     commandes: new Map(),
     rpcLog: [],
     panneProduits: false,

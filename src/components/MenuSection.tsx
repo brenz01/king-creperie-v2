@@ -1,50 +1,49 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { CircleDot, List, Search, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CategorieProduit, Produit } from '@/types';
 import type { Extra } from '@/lib/extras';
 import { chargerExtras, chargerProduits } from '@/lib/catalogue';
 import { useCart } from '@/context/CartContext';
 import { estEpuise } from '@/lib/produit';
-import { confirmerAjout } from '@/lib/toast';
-import PlaqueTournante from './carte/PlaqueTournante';
-import ListeCarte, { type Rubrique } from './carte/ListeCarte';
+import ProductCard from './ProductCard';
+import CategoryTabs, { CATEGORIES, type IdCategorie } from './CategoryTabs';
 import ProductModal from './ProductModal';
 import { AvisFermeture } from './StatutBoutique';
 
-const RUBRIQUES: Rubrique[] = [
-  { categorie: 'salee', titre: 'Crêpes salées', court: 'Salées' },
-  { categorie: 'sucree', titre: 'Crêpes sucrées', court: 'Sucrées' },
-  { categorie: 'boisson', titre: 'Boissons', court: 'Boissons' },
-];
-
-type Vue = 'plaque' | 'liste';
-
 interface MenuSectionProps {
+  // Rendu serveur (SEO + affichage immédiat).
   produitsInitiaux: Produit[] | null;
   extrasInitiaux: Extra[];
 }
 
-// Les produits disponibles d'abord, les épuisés en fin de plaque.
+const ORDRE: CategorieProduit[] = ['salee', 'sucree', 'boisson'];
+
+// Par rubrique, les produits disponibles d'abord, les épuisés à la fin.
 function trier(produits: Produit[]): Produit[] {
-  return [...produits].sort((a, b) => Number(estEpuise(a)) - Number(estEpuise(b)) || a.prix - b.prix);
+  return [...produits].sort(
+    (a, b) =>
+      ORDRE.indexOf(a.categorie) - ORDRE.indexOf(b.categorie) ||
+      Number(estEpuise(a)) - Number(estEpuise(b)) ||
+      a.prix - b.prix,
+  );
 }
 
 // Recherche tolérante : sans accents ni majuscules (« creme » trouve « crème »).
-const normaliser = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const normaliser = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSectionProps) {
   const [produits, setProduits] = useState<Produit[] | null>(produitsInitiaux);
   const [extras, setExtras] = useState<Extra[]>(extrasInitiaux);
+  const [categorie, setCategorie] = useState<IdCategorie>('tout');
   const [selection, setSelection] = useState<Produit | null>(null);
   const [erreur, setErreur] = useState(false);
-  const [categorie, setCategorie] = useState<CategorieProduit>('salee');
-  const [vue, setVue] = useState<Vue>('plaque');
   const [recherche, setRecherche] = useState('');
-  const champRecherche = useRef<HTMLInputElement>(null);
-  const { synchroniser, addToCart } = useCart();
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
+  const { synchroniser } = useCart();
 
+  // Rafraîchissement silencieux : la page est mise en cache (ISR), le
+  // stock et la disponibilité sont donc rechargés au montage.
   useEffect(() => {
     let actif = true;
     void Promise.all([chargerProduits(), chargerExtras()]).then(([p, e]) => {
@@ -64,190 +63,119 @@ export default function MenuSection({ produitsInitiaux, extrasInitiaux }: MenuSe
     };
   }, [synchroniser]);
 
-  const rubriques = useMemo(
-    () =>
-      RUBRIQUES.map((r) => ({ ...r, produits: trier((produits ?? []).filter((p) => p.categorie === r.categorie)) })).filter(
-        (r) => r.produits.length > 0,
-      ),
-    [produits],
+  const tries = useMemo(() => trier(produits ?? []), [produits]);
+
+  const categories = useMemo(
+    () => CATEGORIES.filter((c) => c.id === 'tout' || tries.some((p) => p.categorie === c.id)),
+    [tries],
   );
 
   const terme = normaliser(recherche.trim());
-  const rubriquesFiltrees = useMemo(
+  const affiches = useMemo(
     () =>
       terme
-        ? rubriques.map((r) => ({
-            ...r,
-            produits: r.produits.filter((p) => normaliser(`${p.nom} ${p.description ?? ''}`).includes(terme)),
-          }))
-        : rubriques,
-    [rubriques, terme],
+        ? tries.filter((p) => normaliser(`${p.nom} ${p.description ?? ''}`).includes(terme))
+        : tries.filter((p) => categorie === 'tout' || p.categorie === categorie),
+    [tries, categorie, terme],
   );
 
-  const total = rubriques.reduce((s, r) => s + r.produits.length, 0);
-  const enListe = vue === 'liste' || terme.length > 0;
-  const courante = rubriques.find((r) => r.categorie === categorie) ?? rubriques[0];
-
-  // Ajout direct (boissons) : la photo saute sur la plaque, la barre
-  // panier confirme. Aucun rendu React pour l'effet.
-  const ajouter = (p: Produit, photo: HTMLElement | null) => {
-    addToCart(p);
-    confirmerAjout('Ajouté au panier');
-    if (photo) {
-      photo.classList.remove('plaque-pop');
-      void photo.offsetWidth;
-      photo.classList.add('plaque-pop');
-    }
-  };
-
-  const choisirRubrique = (c: CategorieProduit) => {
-    setCategorie(c);
-    if (enListe) document.getElementById(`liste-${c}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const choisir = (id: IdCategorie) => {
+    setCategorie(id);
+    // On revient en haut de la grille, juste sous la barre collée.
+    const grille = document.getElementById('grille-carte');
+    if (grille && grille.getBoundingClientRect().top < 0) grille.scrollIntoView({ block: 'start' });
   };
 
   return (
     // Pas de z-index ici : il créerait un contexte d'empilement et la fiche
     // produit (rendue dans la section) passerait sous la barre panier.
-    <section
-      id="carte"
-      aria-labelledby="titre-carte"
-      className="carte-reserve relative bg-kc-indigo text-kc-beurre pt-10 scroll-mt-16 overflow-x-clip"
-    >
-      {/* Au-dessus de la plaque : son disque (150vw) remonte sous les
-          rubriques au lieu de les recouvrir. */}
-      <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 id="titre-carte" className="font-display text-5xl sm:text-6xl leading-[0.95]">
-            La carte
-          </h2>
-          {total > 0 && <p className="pb-1 text-sm text-kc-brume tabular-nums">{total} recettes</p>}
-        </div>
+    <section id="carte" aria-labelledby="titre-carte" className="carte-reserve pt-14 sm:pt-20 scroll-mt-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-6">
+        <h2 id="titre-carte" className="font-serif text-4xl sm:text-5xl font-semibold tracking-tight text-stone-900">
+          La carte
+        </h2>
+        <p className="mt-2 text-stone-600">Touchez une crêpe pour choisir vos extras, ou le + pour l’ajouter telle quelle.</p>
         <AvisFermeture />
+      </div>
 
-        {/* Recherche + choix de la vue */}
-        <div className="mt-6 flex gap-2">
-          <label className="relative flex-1 min-w-0">
-            <span className="sr-only">Chercher une recette</span>
-            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-kc-brume/70" />
-            <input
-              ref={champRecherche}
-              id="recherche-carte"
-              type="search"
-              inputMode="search"
-              autoComplete="off"
-              value={recherche}
-              onChange={(e) => setRecherche(e.target.value)}
-              placeholder="Chercher une recette"
-              // Une seule croix : celle du navigateur est masquée (WebKit/Blink).
-              className={`w-full h-12 rounded-full bg-kc-nuit border border-kc-beurre/15 pl-11 ${recherche ? 'pr-11' : 'pr-3'} text-base text-kc-lait placeholder:text-kc-brume/55 focus:outline-none focus:border-kc-caramel [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none`}
-            />
-            {recherche && (
+      {categories.length > 0 && (
+        <CategoryTabs
+          categories={categories}
+          activeCategory={categorie}
+          onSelectCategory={choisir}
+          recherche={recherche}
+          onRecherche={setRecherche}
+          rechercheOuverte={rechercheOuverte}
+          onRechercheOuverte={setRechercheOuverte}
+        />
+      )}
+
+      <div id="grille-carte" className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 scroll-mt-[calc(8rem+env(safe-area-inset-top))]">
+        {terme && produits !== null && affiches.length > 0 && (
+          <p className="mb-5 text-sm text-stone-600" aria-live="polite">
+            {`${affiches.length} résultat${affiches.length > 1 ? 's' : ''} pour « ${recherche.trim()} »`}
+          </p>
+        )}
+
+        {produits === null ? (
+          erreur ? (
+            <div role="alert" className="py-16 text-center">
+              <p className="font-serif text-xl font-semibold text-stone-900">La carte ne s’est pas chargée</p>
+              <p className="mt-2 text-stone-600">La connexion a été coupée. Rechargez la page pour la retrouver.</p>
               <button
                 type="button"
-                onClick={() => {
-                  setRecherche('');
-                  champRecherche.current?.focus();
-                }}
-                aria-label="Effacer la recherche"
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-kc-brume"
+                onClick={() => window.location.reload()}
+                className="appui mt-5 bg-stone-900 pointer-fine:hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg"
               >
-                <X className="w-4 h-4" />
+                Recharger la carte
               </button>
-            )}
-          </label>
-          <div
-            role="group"
-            aria-label="Affichage de la carte"
-            className="shrink-0 flex rounded-full bg-kc-nuit p-1 border border-kc-beurre/15"
-          >
-            {(
-              [
-                { id: 'plaque', libelle: 'Plaque', Icone: CircleDot },
-                { id: 'liste', libelle: 'Liste', Icone: List },
-              ] as const
-            ).map(({ id, libelle, Icone }) => {
-              const actif = id === 'liste' ? enListe : !enListe;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={actif}
-                  onClick={() => {
-                    setVue(id);
-                    if (id === 'plaque') setRecherche('');
-                  }}
-                  className={`appui h-10 min-w-10 px-3.5 max-sm:px-0 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold ${
-                    actif ? 'bg-kc-beurre text-kc-nuit' : 'text-kc-brume'
-                  }`}
-                >
-                  <Icone className="w-4 h-4" aria-hidden />
-                  {/* Sur téléphone, icônes seules : la place revient au champ. */}
-                  <span className="max-sm:sr-only">{libelle}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Rubriques */}
-        {rubriques.length > 1 && !terme && (
-          <div role="group" aria-label="Rubriques" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-kc-nuit p-1">
-            {rubriques.map((r) => {
-              const actif = categorie === r.categorie;
-              return (
-                <button
-                  key={r.categorie}
-                  type="button"
-                  aria-pressed={actif}
-                  onClick={() => choisirRubrique(r.categorie)}
-                  className={`appui rounded-xl py-2.5 text-sm font-semibold leading-tight ${
-                    actif ? 'bg-kc-indigo text-kc-beurre shadow-[inset_0_0_0_1.5px_var(--color-kc-beurre)]' : 'text-kc-brume'
-                  }`}
-                >
-                  {r.court}{' '}
-                  <span className={`tabular-nums ${actif ? 'text-kc-caramel' : 'text-kc-brume/60'}`}>{r.produits.length}</span>
-                </button>
-              );
-            })}
+            </div>
+          ) : (
+            // Squelette de la grille : même géométrie que les cartes.
+            <div aria-label="Chargement de la carte" role="status" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7 sm:gap-x-6 sm:gap-y-9">
+              {Array.from({ length: 8 }, (_, i) => (
+                <div key={i}>
+                  <div className="aspect-square rounded-2xl bg-stone-200/70 motion-safe:animate-pulse" />
+                  <div className="mt-3 h-4 w-3/4 rounded bg-stone-200/70" />
+                  <div className="mt-2 h-4 w-1/3 rounded bg-stone-200/70" />
+                </div>
+              ))}
+            </div>
+          )
+        ) : affiches.length === 0 ? (
+          terme ? (
+            <div aria-live="polite" className="py-12 text-center">
+              <p className="font-serif text-xl font-semibold text-stone-900">Aucune recette ne correspond à « {recherche.trim()} ».</p>
+              <p className="mt-2 text-stone-600">Essayez un ingrédient : nutella, poulet, fromage…</p>
+              <button
+                type="button"
+                onClick={() => setRecherche('')}
+                className="appui mt-5 bg-stone-900 pointer-fine:hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg"
+              >
+                Effacer la recherche
+              </button>
+            </div>
+          ) : (
+            <div className="py-12 text-center">
+              <p className="font-serif text-xl font-semibold text-stone-900">Rien dans cette rubrique pour le moment</p>
+              <p className="mt-2 text-stone-600">Le reste de la carte vous attend.</p>
+              <button
+                type="button"
+                onClick={() => choisir('tout')}
+                className="appui mt-5 bg-stone-900 pointer-fine:hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg"
+              >
+                Voir toute la carte
+              </button>
+            </div>
+          )
+        ) : (
+          <div key={terme || categorie} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7 sm:gap-x-6 sm:gap-y-9">
+            {affiches.map((produit, i) => (
+              <ProductCard key={produit.id} produit={produit} onOuvrir={setSelection} rang={i} prioritaire={i < 4} />
+            ))}
           </div>
         )}
       </div>
-
-      {produits === null ? (
-        <div className="py-10" aria-live="polite">
-          {erreur ? (
-            <p className="max-w-md mx-auto px-5 text-center text-kc-brume">
-              La carte ne s’est pas chargée. Vérifiez votre connexion, puis rechargez la page.
-            </p>
-          ) : (
-            <div className="flex justify-center" aria-label="Chargement de la carte">
-              <span className="block w-[min(52vw,14rem)] aspect-square rounded-full bg-kc-nuit animate-pulse" />
-            </div>
-          )}
-        </div>
-      ) : enListe ? (
-        <div key="liste" className="kc-fondu mt-6 max-w-3xl mx-auto sm:px-6">
-          <div className="bg-kc-lait text-kc-encre rounded-t-[2rem] sm:rounded-[2rem]">
-            <ListeCarte
-              rubriques={rubriquesFiltrees}
-              recherche={recherche.trim()}
-              onComposer={setSelection}
-              onAjouter={ajouter}
-            />
-          </div>
-        </div>
-      ) : (
-        courante && (
-          <div key={courante.categorie} className="kc-fondu mt-2">
-            <PlaqueTournante
-              produits={courante.produits}
-              libelle={courante.titre}
-              onComposer={setSelection}
-              onAjouter={ajouter}
-            />
-          </div>
-        )
-      )}
 
       {selection && <ProductModal produit={selection} extras={extras} onClose={() => setSelection(null)} />}
     </section>

@@ -1,60 +1,57 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
-   Identité « la plaque »
-   Indigo bazin (fond des moments forts), beurre (texte sur indigo),
-   bissap (action), caramel (prix, crêpe dorée), lait (surfaces claires).
+   Identité King Crêperie : crème beurrée, brun cacao, caramel brûlé.
+   Surfaces translucides (en-tête, onglets, voiles) sur fond crème ;
+   espace staff en thème sombre cacao.
+   Polices : --font-inter / --font-fraunces posées sur <html> par
+   next/font (src/app/fonts.ts).
    ------------------------------------------------------------------ */
 @theme inline {
-  --font-sans: var(--font-onest), system-ui, sans-serif;
-  --font-serif: var(--font-bagel), 'Arial Rounded MT Bold', sans-serif;
-  --font-display: var(--font-bagel), 'Arial Rounded MT Bold', sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
 
-  /* Palette de référence (cahier des charges « La plaque vivante »). */
-  --color-kc-indigo: #1e2a5c;      /* identité, fonds forts */
-  --color-kc-nuit: #151c40;        /* la plaque, surfaces profondes */
-  --color-kc-encre: #282743;       /* texte sur fond clair */
-  --color-kc-beurre: #f7e6a7;      /* titres et sélection sur indigo */
-  --color-kc-bissap: #be2d52;      /* action principale */
-  --color-kc-bissap-fonce: #9c2142;
-  --color-kc-caramel: #f2a93b;     /* prix sur fond sombre */
-  --color-kc-lait: #fff8e8;        /* surfaces calmes : fiche, commande */
-  --color-kc-brume: #cfd2e6;       /* texte secondaire sur indigo (≥ 7:1) */
-  --color-kc-ligne: rgb(40 39 67 / 0.12);
-  --color-kc-ok: #2f7d4f;          /* sémantique : ouvert, livré */
+  /* Le site client utilise la palette Tailwind (stone, amber) et les
+     classes brand-* ci-dessous ; ces jetons servent à l'espace staff. */
+  --color-creme: #fbf3e7;            /* crème beurrée (bg-creme/90 : surfaces translucides) */
+  --color-kc-ok: #6b8763;            /* vert sauge : livré */
 
-  /* Grammaire du mouvement : trois durées, deux courbes. */
-  --ease-sortie: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-ressort: cubic-bezier(0.3, 1.45, 0.5, 1);
+  /* Sombre (KC Staff) */
+  --color-kc-nuit: #1c1712;          /* fond sombre */
+  --color-kc-carte: #26201a;         /* cartes sur fond sombre */
+  --color-kc-bord: #3d332a;          /* bordures sur fond sombre */
+  --color-kc-creme: #f5ebda;         /* texte sur fond sombre */
+  --color-kc-sable: #c4b39b;         /* texte secondaire sur fond sombre */
+  --color-kc-caramel: #dda15e;       /* accent sur fond sombre */
+
+  /* Mouvement : quatre durées (100 / 150 / 200 / 300 ms), deux courbes.
+     Entrée ease-out, sortie ease-in, jamais de rebond sur l'interface. */
+  --ease-sortie: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-entree-sortie: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
 @layer base {
   :root {
-    --bg-primary: #fff8e8;
+    --bg-primary: #fbf3e7;
     --bg-card: #ffffff;
-    --text-primary: #282743;
-    --text-secondary: #5b5f7a;
-    --accent: #be2d52;
-    --accent-hover: #9c2142;
-    --border-color: #e9e2d0;
-    --success: #4f7a4a;
-  }
-
-  html {
-    /* Bagel n'existe qu'en une graisse et sans italique : jamais de
-       gras ou d'italique synthétisés par le navigateur. */
-    font-synthesis: none;
+    --text-primary: #2a1b12;
+    --text-secondary: #6b5642;
+    --accent: #b8621b;
+    --accent-hover: #9a5115;
+    --border-color: #e7dcc8;
+    --success: #6b8763;
   }
 
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
+    /* Supprime le flash bleu au tap sur mobile (sensation « app »). */
     -webkit-tap-highlight-color: transparent;
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-kc-caramel);
+    outline: 3px solid var(--accent);
     outline-offset: 3px;
   }
 
@@ -64,12 +61,11 @@
   .lenis.lenis-stopped { overflow: hidden; }
 }
 
-/* Prix : chiffres larges et alignés, pour comparer d'un coup d'œil. */
+/* Prix : Fraunces, chiffres alignés pour comparer d'un coup d'œil. */
 @utility prix {
-  font-family: var(--font-onest), system-ui, sans-serif;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 @utility scrollbar-none {
@@ -77,25 +73,14 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Ajout au panier : la crêpe « saute » sur la plaque, avec un halo
-   caramel, le temps d'un battement. */
-@keyframes plaque-pop {
-  0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgb(242 169 59 / 0); }
-  35%  { transform: scale(1.07); box-shadow: 0 0 0 10px rgb(242 169 59 / 0.35); }
-  100% { transform: scale(1);    box-shadow: 0 0 0 18px rgb(242 169 59 / 0); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .plaque-pop { animation: plaque-pop 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
-}
-
-/* Barre panier : petit rebond quand un article arrive. */
+/* Barre panier : elle se soulève d'un cran quand un article arrive. */
 @keyframes barre-rebond {
   0%   { transform: translateY(0) scale(1); }
-  40%  { transform: translateY(-6px) scale(1.02); }
+  40%  { transform: translateY(-4px) scale(1.02); }
   100% { transform: translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .barre-rebond { animation: barre-rebond 420ms ease-out; }
+  .barre-rebond { animation: barre-rebond 300ms var(--ease-sortie); }
 }
 
 .bg-brand-cream { background-color: var(--bg-primary); }
@@ -110,85 +95,62 @@
    Grammaire du mouvement
    Niveau 1 (structure) : panneaux, changements d'écran, 280-480 ms.
    Niveau 2 (interaction) : retour immédiat, 120-200 ms.
-   Niveau 3 (signature) : plaque, ajout au panier, accueil.
    ------------------------------------------------------------------ */
 @keyframes kc-apparait {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes kc-fondu { from { opacity: 0; } to { opacity: 1; } }
+/* Nouvelle commande (staff) : halo répété trois fois, signal fonctionnel. */
 @keyframes kc-surligne {
-  0%   { box-shadow: 0 0 0 0 rgb(242 169 59 / 0.55); }
-  100% { box-shadow: 0 0 0 14px rgb(242 169 59 / 0); }
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
 }
-/* Anneau de suivi : l'arc de l'étape en cours se trace (stroke-dashoffset
-   part de --long, la longueur de l'arc). */
-@keyframes kc-trace { from { stroke-dashoffset: var(--long); } to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: no-preference) {
-  .kc-trace { animation: kc-trace 900ms var(--ease-sortie) both; }
-  .kc-apparait { animation: kc-apparait 320ms var(--ease-sortie) both; }
-  .kc-fondu { animation: kc-fondu 240ms ease-out both; }
-  .kc-surligne { animation: kc-surligne 900ms ease-out 2; }
+  .kc-apparait { animation: kc-apparait 300ms var(--ease-sortie) both; }
+  .kc-fondu { animation: kc-fondu 200ms ease-out both; }
+}
+.kc-surligne { position: relative; }
+.kc-surligne::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 3px solid rgb(245 158 11 / 0.7);
+  pointer-events: none;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kc-surligne::after { animation: kc-surligne 300ms var(--ease-sortie) 3 both; }
+}
+
+/* Suivi : halo qui s'élargit autour du statut tant que la cuisine
+   travaille (boucle fonctionnelle, coupée en mouvement réduit). */
+@keyframes suivi-halo {
+  0%   { transform: scale(1);    opacity: 0.8; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Surfaces translucides : toujours une bordure, et un fond opaque quand
+   le navigateur ne sait pas flouter. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .verre-clair { background-color: #fbf3e7 !important; }
+  .verre-sombre { background-color: #1c1917 !important; }
+  .verre-staff { background-color: #1c1712 !important; }
 }
 
 /* Pression : tout ce qui se touche répond tout de suite. */
 @utility appui {
-  transition: transform 140ms var(--ease-sortie), background-color 160ms, color 160ms, border-color 160ms;
-  &:active { transform: scale(0.96); }
+  transition: transform 100ms var(--ease-sortie), background-color 150ms, color 150ms, border-color 150ms;
+  &:active { transform: scale(0.97); }
+  @media (prefers-reduced-motion: reduce) {
+    &:active { transform: none; }
+  }
 }
 
-/* La plaque tournante : chaque crêpe reçoit --d (distance au centre,
-   en largeurs d'élément, signée) et --ad (sa valeur absolue) depuis le
-   défilement natif. Arc + inclinaison + échelle : la rangée devient le
-   bord d'une plaque qui tourne. */
-.plaque-tour > li {
-  --d: 0; --ad: 0;
-  transform:
-    translateY(calc(var(--ad) * var(--ad) * 26px))
-    rotate(calc(var(--d) * 9deg))
-    scale(calc(1 - min(var(--ad), 1.4) * 0.24));
-  /* Au-delà de 1,6 la crêpe s'efface et a disparu vers 2,6 : elle quitte
-     la plaque avant de sortir de la zone visible du rail. */
-  opacity: calc(1 - min(var(--ad), 1.6) * 0.32 - max(0, var(--ad) - 1.6) * 0.5);
-  transform-origin: 50% 120%;
-}
-.plaque-tour .photo-tourne { transform: rotate(calc(var(--d) * -28deg)); }
-
-/* Éléments fixés en bas d'écran. --reserve-panier est la hauteur réelle
-   de la barre panier (FloatingCartBar, 0 si absente). */
-.dock-recette {
-  bottom: calc(max(var(--reserve-panier, 0px), env(safe-area-inset-bottom)) + 0.75rem);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .dock-recette { transition: bottom 300ms var(--ease-sortie); }
-}
-/* Description recouverte par la barre d'action soulevée (--leve, mesuré
-   dans PlaqueTournante) : effacée sous la barre, fondu de 12 px au-dessus.
-   Au repos (--leve = 0), le fondu tombe dans le pb-4 vide. */
-.sous-dock {
-  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--leve, 0px) - 12px), transparent calc(100% - var(--leve, 0px)));
-}
-/* Fin de carte : jamais moins qu'avant (7 rem), et toujours de quoi
-   dégager le dernier élément au-dessus de la barre panier. */
+/* Fin de carte : de quoi dégager la dernière rangée au-dessus de la barre
+   panier. --reserve-panier est sa hauteur réelle (FloatingCartBar, 0 si
+   absente). */
 .carte-reserve {
-  padding-bottom: max(7rem, calc(var(--reserve-panier, 0px) + 1.5rem));
-}
-
-/* Taille de la crêpe au centre de la plaque : 52vw plafonnés à 14 rem,
-   comme avant. Sur les écrans courts, elle suit aussi la hauteur visible
-   (svh : barres du navigateur déployées) pour que titre, prix et action
-   tiennent au-dessus de la barre panier dès l'arrivée sur la carte.
-   Inchangée à partir d'environ 800 px de haut. */
-.plaque-cadre {
-  --plaque: min(52vw, 14rem, max(7.5rem, 100svh - 37.5rem));
-}
-/* Téléphones de 800 px de haut ou moins : la carte se resserre. */
-@media (max-width: 639px) and (max-height: 800px) {
-  .carte-reserve { padding-top: 1.5rem; }
-  .plaque-tour { padding-top: 0.5rem; }
-  .titre-recette { font-size: 1.4rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .plaque-tour > li { transform: scale(calc(1 - min(var(--ad), 1.4) * 0.18)); }
-  .plaque-tour .photo-tourne { transform: none; }
+  padding-bottom: max(5rem, calc(var(--reserve-panier, 0px) + 2rem));
 }

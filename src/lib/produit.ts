@@ -11,16 +11,7 @@ export function portionsRestantes(p: Produit): number | null {
   return p.stock_quantite <= 3 ? p.stock_quantite : null;
 }
 
-export const prixF = (n: number) => `${n.toLocaleString('fr-FR')} F`;
-
-// Dernière position connue de la photo touchée : la fiche s'ouvre
-// depuis cet endroit (transition « la crêpe quitte la plaque »).
-let origine: DOMRect | null = null;
-export const memoriserOrigine = (r: DOMRect | null) => {
-  origine = r;
-};
-export const lireOrigine = () => {
-  const r = origine;
-  origine = null;
-  return r;
-};
+// Espace insécable classique plutôt que l'espace fine (U+202F) produite
+// par fr-FR : Fraunces n'a pas ce glyphe (« 2000 » au lieu de « 2 000 »).
+export const nombreF = (n: number) => n.toLocaleString('fr-FR').replace(/\u202f/g, '\u00a0');
+export const prixF = (n: number) => `${nombreF(n)} F`;

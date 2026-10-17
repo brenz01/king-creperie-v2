@@ -13,8 +13,8 @@
     "test:e2e:rapide": "playwright test"
   },
   "dependencies": {
-    "@fontsource-variable/onest": "^5.3.1",
-    "@fontsource/bagel-fat-one": "^5.3.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
     "@supabase/supabase-js": "^2.114.0",
     "framer-motion": "^13.2.0",
     "lenis": "^1.3.26",
@@ -27,6 +27,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "1.56.0",
     "@serwist/turbopack": "^9.5.13",
     "@tailwindcss/postcss": "^4",

@@ -22,10 +22,13 @@ test('HTML initial : le catalogue est rendu côté serveur', async ({ request })
 test.describe('sans JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('la plaque affiche la première recette et les rubriques', async ({ page }) => {
+  test('la carte affiche les onglets et toutes les crêpes', async ({ page }) => {
     await page.goto('/');
     const carte = page.locator('#carte');
-    await expect(carte.getByRole('button', { name: 'Salées 7' })).toBeVisible();
+    await expect(carte.getByRole('button', { name: 'Salées' })).toBeVisible();
+    await expect(carte.locator('article')).toHaveCount(20);
     await expect(carte.locator('h3').first()).toHaveText('Crêpe Jambon Fromage');
+    // Sans JavaScript, les cartes restent visibles (animation CSS, pas JS).
+    await expect(carte.locator('article').first()).toHaveCSS('opacity', '1');
   });
 });

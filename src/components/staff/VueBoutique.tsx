@@ -38,7 +38,7 @@ export default function VueBoutique(props: VueBoutiqueProps) {
       {boutiqueAbsente ? (
         <Carte className="p-5">
           <p className="font-semibold">Horaires pas encore activés</p>
-          <p className="mt-1 text-sm text-kc-encre/70">
+          <p className="mt-1 text-sm text-kc-creme/70">
             Exécutez la migration <code className="font-mono text-xs">20261016150000_boutique_horaires.sql</code> dans le SQL
             Editor de Supabase, puis rechargez cette page.
           </p>
@@ -50,7 +50,7 @@ export default function VueBoutique(props: VueBoutiqueProps) {
           <EditeurHoraires boutique={boutique} onBoutique={props.onBoutique} />
         </>
       ) : (
-        <div className="py-10 flex justify-center text-kc-brume">
+        <div className="py-10 flex justify-center text-kc-sable">
           <Loader2 className="w-6 h-6 animate-spin" aria-label="Chargement" />
         </div>
       )}
@@ -65,10 +65,10 @@ export default function VueBoutique(props: VueBoutiqueProps) {
       <Journal auditLog={auditLog} commandes={commandes} />
 
       <section className="border-t border-white/10 pt-6 flex items-center justify-between gap-3">
-        <p className="text-sm text-kc-brume/70 min-w-0 truncate">Connecté : {session.user.email}</p>
+        <p className="text-sm text-kc-sable/70 min-w-0 truncate">Connecté : {session.user.email}</p>
         <button
           onClick={props.onDeconnexion}
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-kc-brume hover:border-white/40 shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl border border-kc-bord px-4 py-2.5 text-sm font-semibold text-kc-sable hover:border-kc-sable/60 shrink-0"
         >
           <LogOut className="w-4 h-4" /> Se déconnecter
         </button>
@@ -117,13 +117,13 @@ function EtatEtPause({
       <TitreSection>Boutique</TitreSection>
       <Carte className="p-5">
         <div className="flex items-center gap-3">
-          <span className={`w-3 h-3 rounded-full shrink-0 ${etat.ouvert ? 'bg-emerald-500' : 'bg-kc-bissap'}`} aria-hidden />
+          <span className={`w-3 h-3 rounded-full shrink-0 ${etat.ouvert ? 'bg-emerald-500' : 'bg-rose-500'}`} aria-hidden />
           <div className="min-w-0">
-            <p className="text-xl font-bold leading-tight">
+            <p className="text-xl font-semibold leading-tight">
               {etat.ouvert ? 'Ouvert' : etat.enPause ? 'En pause' : 'Fermé'}
-              {etat.ouvert && etat.fermeA && <span className="font-semibold text-kc-encre/60"> jusqu’à {etat.fermeA}</span>}
+              {etat.ouvert && etat.fermeA && <span className="font-semibold text-kc-creme/75"> jusqu’à {etat.fermeA}</span>}
             </p>
-            <p className="text-sm text-kc-encre/65 mt-0.5">
+            <p className="text-sm text-kc-creme/65 mt-0.5">
               {etat.ouvert
                 ? 'Les clients peuvent commander.'
                 : etat.enPause
@@ -135,16 +135,16 @@ function EtatEtPause({
           </div>
         </div>
 
-        <div className="mt-5 border-t border-kc-encre/10 pt-4">
+        <div className="mt-5 border-t border-kc-bord pt-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold">Mettre les commandes en pause</p>
-              <p className="text-sm text-kc-encre/60">
+              <p className="text-sm text-kc-creme/75">
                 Trop de monde, plus de pâte, coupure… Un geste, et on reprend quand on veut.
               </p>
             </div>
             {occupe ? (
-              <Loader2 className="w-6 h-6 animate-spin text-kc-indigo shrink-0" />
+              <Loader2 className="w-6 h-6 animate-spin text-kc-caramel shrink-0" />
             ) : (
               <Interrupteur
                 actif={boutique.fermeture_exceptionnelle}
@@ -165,7 +165,7 @@ function EtatEtPause({
           {boutique.fermeture_exceptionnelle && (
             <div className="mt-4">
               <label htmlFor="message-pause" className="text-sm font-semibold">
-                Message aux clients <span className="font-normal text-kc-encre/50">(facultatif)</span>
+                Message aux clients <span className="font-normal text-kc-creme/75">(facultatif)</span>
               </label>
               <div className="mt-1.5 flex gap-2">
                 <input
@@ -174,19 +174,19 @@ function EtatEtPause({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Ex. : Fermé ce soir, on rouvre demain à 17 h."
-                  className="flex-1 min-w-0 rounded-2xl border border-kc-encre/15 bg-white px-4 py-3 text-base focus:outline-none focus:border-kc-indigo"
+                  className="flex-1 min-w-0 rounded-xl border border-kc-bord bg-kc-nuit px-4 py-3 text-base focus:outline-none focus:border-amber-500"
                 />
                 <button
                   onClick={() => void enregistrer({ message_fermeture: message.trim() || null }, 'Message enregistré.')}
                   disabled={occupe || message.trim() === (boutique.message_fermeture ?? '')}
-                  className="rounded-full bg-kc-indigo text-kc-beurre font-semibold px-4 text-sm disabled:opacity-40"
+                  className="rounded-xl bg-amber-500 hover:bg-amber-400 text-kc-nuit font-semibold px-4 text-sm disabled:opacity-40"
                 >
                   OK
                 </button>
               </div>
             </div>
           )}
-          {erreur && <p className="mt-3 text-sm font-semibold text-kc-bissap">{erreur}</p>}
+          {erreur && <p className="mt-3 text-sm font-semibold text-rose-400">{erreur}</p>}
         </div>
       </Carte>
     </section>
@@ -231,13 +231,13 @@ function BilanDuJour({ commandes, maintenant }: { commandes: Commande[]; mainten
       <Carte className="mt-2 p-4">
         <p className="text-sm font-semibold">Les plus demandées</p>
         {bilan.top.length === 0 ? (
-          <p className="mt-1 text-sm text-kc-encre/60">Pas encore de commande aujourd’hui.</p>
+          <p className="mt-1 text-sm text-kc-creme/75">Pas encore de commande aujourd’hui.</p>
         ) : (
           <ol className="mt-2 space-y-1.5">
             {bilan.top.map(([nom, q], i) => (
               <li key={nom} className="flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate">
-                  <span className="font-bold text-kc-indigo">{i + 1}.</span> {nom}
+                  <span className="font-semibold text-kc-caramel">{i + 1}.</span> {nom}
                 </span>
                 <span className="font-semibold shrink-0">× {q}</span>
               </li>
@@ -245,7 +245,7 @@ function BilanDuJour({ commandes, maintenant }: { commandes: Commande[]; mainten
           </ol>
         )}
         {bilan.annulees > 0 && (
-          <p className="mt-3 text-xs text-kc-encre/55">
+          <p className="mt-3 text-xs text-kc-creme/75">
             {bilan.annulees} commande{bilan.annulees > 1 ? 's' : ''} annulée{bilan.annulees > 1 ? 's' : ''} aujourd’hui.
           </p>
         )}
@@ -257,8 +257,8 @@ function BilanDuJour({ commandes, maintenant }: { commandes: Commande[]; mainten
 function Tuile({ valeur, libelle }: { valeur: string; libelle: string }) {
   return (
     <Carte className="p-4">
-      <p className="prix text-2xl leading-none text-kc-indigo">{valeur}</p>
-      <p className="mt-1.5 text-xs font-semibold text-kc-encre/60">{libelle}</p>
+      <p className="prix text-2xl leading-none text-kc-caramel">{valeur}</p>
+      <p className="mt-1.5 text-xs font-semibold text-kc-creme/75">{libelle}</p>
     </Carte>
   );
 }
@@ -314,16 +314,16 @@ function EditeurHoraires({ boutique, onBoutique }: { boutique: Boutique; onBouti
       <TitreSection aide="En dehors de ces heures, le site affiche « fermé » et n’accepte pas de commande. Fermeture après minuit possible (ex. 18:00 → 01:00).">
         Horaires d’ouverture
       </TitreSection>
-      <Carte className="divide-y divide-kc-encre/10">
+      <Carte className="divide-y divide-kc-creme/10">
         {ORDRE_JOURS.map((j) => {
           const p = plage(j);
           const toute = p?.ouvre === '00:00' && p?.ferme === '24:00';
           return (
             <div key={j} className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
-                <span className={`font-semibold ${p ? '' : 'text-kc-encre/45'}`}>{JOURS[j]}</span>
+                <span className={`font-semibold ${p ? '' : 'text-kc-creme/75'}`}>{JOURS[j]}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-kc-encre/55">{p ? 'Ouvert' : 'Fermé'}</span>
+                  <span className="text-xs font-semibold text-kc-creme/75">{p ? 'Ouvert' : 'Fermé'}</span>
                   <Interrupteur
                     actif={!!p}
                     libelle={`Ouvert le ${JOURS[j].toLowerCase()}`}
@@ -339,22 +339,22 @@ function EditeurHoraires({ boutique, onBoutique }: { boutique: Boutique; onBouti
                     aria-label={`Ouverture le ${JOURS[j].toLowerCase()}`}
                     value={versChamp(p.ouvre)}
                     onChange={(e) => e.target.value && changer(j, { ouvre: e.target.value, ferme: p.ferme })}
-                    className="rounded-xl border border-kc-encre/15 bg-white px-3 py-2 text-base font-semibold"
+                    className="rounded-xl border border-kc-bord bg-kc-nuit px-3 py-2 text-base font-semibold"
                   />
-                  <span className="text-kc-encre/50">à</span>
+                  <span className="text-kc-creme/75">à</span>
                   <input
                     type="time"
                     step={900}
                     aria-label={`Fermeture le ${JOURS[j].toLowerCase()}`}
                     value={versChamp(p.ferme)}
                     onChange={(e) => e.target.value && changer(j, { ouvre: p.ouvre, ferme: depuisChampFerme(e.target.value) })}
-                    className="rounded-xl border border-kc-encre/15 bg-white px-3 py-2 text-base font-semibold"
+                    className="rounded-xl border border-kc-bord bg-kc-nuit px-3 py-2 text-base font-semibold"
                   />
-                  {toute && <span className="text-xs text-kc-encre/55">toute la journée</span>}
+                  {toute && <span className="text-xs text-kc-creme/75">toute la journée</span>}
                 </div>
               )}
               {j === 1 && (
-                <button onClick={() => copierPartout(1)} className="mt-2 text-sm font-semibold text-kc-indigo py-1">
+                <button onClick={() => copierPartout(1)} className="mt-2 text-sm font-semibold text-kc-caramel py-1">
                   Mêmes horaires tous les jours
                 </button>
               )}
@@ -363,27 +363,27 @@ function EditeurHoraires({ boutique, onBoutique }: { boutique: Boutique; onBouti
         })}
       </Carte>
 
-      {erreur && <p className="mt-3 text-sm font-semibold text-kc-bissap">{erreur}</p>}
+      {erreur && <p className="mt-3 text-sm font-semibold text-rose-400">{erreur}</p>}
 
       {modifie && (
         <div className="mt-3 flex gap-2">
           <button
             onClick={() => void enregistrer()}
             disabled={occupe}
-            className="flex-1 rounded-full bg-kc-caramel hover:bg-kc-beurre text-kc-nuit font-semibold py-3.5 flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-kc-nuit font-semibold py-3.5 flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {occupe && <Loader2 className="w-4 h-4 animate-spin" />}
             Enregistrer les horaires
           </button>
           <button
             onClick={() => setBrouillon(boutique.horaires)}
-            className="rounded-full border border-white/15 px-5 text-sm font-semibold text-kc-brume"
+            className="rounded-xl border border-kc-bord px-5 text-sm font-semibold text-kc-sable hover:border-kc-sable/60"
           >
             Annuler
           </button>
         </div>
       )}
-      <p className="mt-2 text-xs text-kc-brume/60">
+      <p className="mt-2 text-xs text-kc-sable/80">
         Résumé :{' '}
         {ORDRE_JOURS.map((j) => {
           const p = plage(j);
@@ -410,19 +410,19 @@ function Journal({ auditLog, commandes }: { auditLog: LigneAuditLog[]; commandes
         className="w-full flex items-center justify-between gap-3 text-left"
       >
         <span>
-          <span className="block font-display text-2xl text-kc-beurre leading-tight">Journal</span>
-          <span className="block mt-1 text-sm text-kc-brume/70">Qui a changé quelle commande, et quand.</span>
+          <span className="block font-serif font-semibold text-2xl text-kc-creme leading-tight">Journal</span>
+          <span className="block mt-1 text-sm text-kc-sable/70">Qui a changé quelle commande, et quand.</span>
         </span>
-        <ChevronDown className={`w-5 h-5 text-kc-brume transition-transform ${ouvert ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-5 h-5 text-kc-sable transition-transform ${ouvert ? 'rotate-180' : ''}`} />
       </button>
       {ouvert &&
         (auditLog.length === 0 ? (
-          <p className="mt-3 text-sm text-kc-brume/70">Aucun changement enregistré.</p>
+          <p className="mt-3 text-sm text-kc-sable/70">Aucun changement enregistré.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {auditLog.slice(0, 50).map((l) => (
               <li key={l.id} className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3">
-                <div className="flex items-center justify-between gap-3 text-xs text-kc-brume/60">
+                <div className="flex items-center justify-between gap-3 text-xs text-kc-sable/80">
                   <span className="truncate">
                     n° {numero(l.commande_id)}
                     {client(l.commande_id) ? ` · ${client(l.commande_id)}` : ''}
@@ -432,11 +432,11 @@ function Journal({ auditLog, commandes }: { auditLog: LigneAuditLog[]; commandes
                   </span>
                 </div>
                 <p className="mt-1 text-sm">
-                  <span className="text-kc-brume/70">{libelle(l.ancien_statut)}</span>
-                  <span className="mx-2 text-kc-brume/40">→</span>
-                  <span className="font-semibold text-kc-beurre">{libelle(l.nouveau_statut)}</span>
+                  <span className="text-kc-sable/70">{libelle(l.ancien_statut)}</span>
+                  <span className="mx-2 text-kc-sable/80">→</span>
+                  <span className="font-semibold text-kc-creme">{libelle(l.nouveau_statut)}</span>
                 </p>
-                <p className="mt-0.5 text-xs text-kc-brume/50">{l.modifie_par_email || 'Système'}</p>
+                <p className="mt-0.5 text-xs text-kc-sable/80">{l.modifie_par_email || 'Système'}</p>
               </li>
             ))}
           </ul>

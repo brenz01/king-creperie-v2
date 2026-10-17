@@ -27,7 +27,8 @@ test('commandes : l’annulation demande une confirmation', async ({ page }) => 
   const carte = page.locator('article', { hasText: 'Awa Ndiaye' });
   await carte.getByRole('button', { name: 'Annuler', exact: true }).click();
   await expect(carte).toContainText('Annuler la commande de Awa Ndiaye ?');
-  await carte.getByRole('button', { name: 'Non, garder' }).click();
+  await expect(carte.getByRole('button', { name: 'Garder la commande' })).toBeFocused();
+  await carte.getByRole('button', { name: 'Garder la commande' }).click();
   await expect(carte.getByRole('button', { name: 'Lancer la préparation' })).toBeVisible();
 });
 

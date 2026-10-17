@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'KC Staff', statusBarStyle: 'black-translucent' },
 };
 
-export const viewport: Viewport = { themeColor: '#161e45' };
+export const viewport: Viewport = { themeColor: '#1C1712' };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;

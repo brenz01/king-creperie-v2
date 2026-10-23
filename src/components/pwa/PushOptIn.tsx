@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Bell, BellRing, BellOff, Loader2 } from 'lucide-react';
 import { activerPush, pushSupporte, raisonPushIndisponible } from '@/lib/pwa/push';
 import { useInstallation } from '@/lib/pwa/install';
@@ -26,7 +26,25 @@ export default function PushOptIn({ cible, libelle, compact, masquerSiActif }: P
   const hydrate = useEstHydrate();
   const [etat, setEtat] = useState<Etat>('inactif');
 
-  const texteDiscret = compact ? 'text-kc-sable/70' : 'text-stone-500';
+  // Les abonnements client sont rattachés à UNE commande (et purgés quand
+  // elle est livrée). Si le client a déjà autorisé les notifications lors
+  // d'une commande précédente, la nouvelle commande doit être abonnée
+  // d'office : sans ça, le bouton affichait « Vous serez prévenu » sans
+  // rien enregistrer, et plus aucune notification n'arrivait.
+  // Permission déjà accordée : aucune fenêtre ne s'ouvre, pas de clic requis.
+  const commandeId = 'commandeId' in cible ? cible.commandeId : null;
+  useEffect(() => {
+    if (permission !== 'granted' || !commandeId) return;
+    let annule = false;
+    void activerPush({ commandeId }).then((r) => {
+      if (!annule) setEtat(r === 'ok' ? 'actif' : r === 'refuse' ? 'refuse' : 'erreur');
+    });
+    return () => {
+      annule = true;
+    };
+  }, [permission, commandeId]);
+
+  const texteDiscret = compact ? 'text-kc-sable/70' : 'text-stone-600'; // stone-500 : contraste insuffisant sur le fond crème (WCAG AA)
 
   if (permission === 'unsupported') {
     // iOS : le push web n'existe que dans l'app installée (iOS 16.4+).

@@ -26,6 +26,9 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: 'e2e-service',
   NEXT_PUBLIC_SITE_URL: 'http://localhost:3100',
   NEXT_PUBLIC_WHATSAPP_NUMBER: '221770000000',
+  // Clé publique VAPID de test (sans clé privée : aucun envoi réel) : le
+  // bouton d'alertes s'affiche, comme en production.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: 'BLap0El2qMAJ2oBZZWMB5HVuHTn-RvwVL2aSSG57qOcKHMUC4v-OfETXgm9AEotArc54ZV46O3bA20GcoqlIKTo',
   NEXT_TELEMETRY_DISABLED: '1',
 };
 
